@@ -28,16 +28,7 @@ class AuthController extends Controller
     }
 
     // LOGIN
-    // public function login(Request $request)
-    // {
-    //     if (!Auth::attempt($request->only('email', 'password'))) {
-    //         return response()->json(['message' => 'Invalid credentials'], 401);
-    //     }
 
-    //     $request->session()->regenerate();
-
-    //     return response()->json(['message' => 'Logged in']);
-    // }
 
     public function login(Request $request)
 {
@@ -62,12 +53,20 @@ class AuthController extends Controller
 }
 
 
+
     // LOGOUT
+    // public function logout(Request $request)
+    // {
+    //     Auth::logout();
+    //     return response()->json(['message' => 'Logged out']);
+    // }
     public function logout(Request $request)
-    {
-        Auth::logout();
-        return response()->json(['message' => 'Logged out']);
-    }
+{
+    // Supprimer le token actuel de l'utilisateur
+    $request->user()->currentAccessToken()->delete();
+
+    return response()->json(['message' => 'Logged out successfully']);
+}
 
     // USER
     public function user(Request $request)

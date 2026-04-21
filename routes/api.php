@@ -16,7 +16,9 @@ use App\Http\Controllers\AuthController;
 // AUTH
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
+// Protégez la route logout avec Sanctum
+Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+// Route::post('/logout', [AuthController::class, 'logout']);
 
 
 
