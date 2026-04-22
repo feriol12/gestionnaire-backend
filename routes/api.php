@@ -17,9 +17,7 @@ use App\Http\Controllers\ExpenseController;
 
 // routes/api.php
 
-Route::middleware('auth:sanctum')->get('/test-auth', function () {
-    return response()->json(['message' => 'Authentifié avec succès !', 'user' => auth()->user()]);
-});
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/expenses', [ExpenseController::class, 'index']);
