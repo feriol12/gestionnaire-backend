@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ExpenseController;
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ExportController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -31,6 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/expenses/{id}', [ExpenseController::class, 'show']);
     Route::put('/expenses/{id}', [ExpenseController::class, 'update']);
     Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy']);
+    Route::get('/export/pdf', [ExportController::class, 'export']);     
+
 });
 
 
