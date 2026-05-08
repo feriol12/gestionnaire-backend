@@ -44,7 +44,7 @@ class ExportController extends Controller
                         <tr><th>Date</th><th>Description</th><th>Catégorie</th><th>Montant</th></tr>
                     </thead>
                     <tbody>';
-            
+
             foreach ($expenses as $e) {
                 $html .= '
                     <tr>
@@ -54,7 +54,7 @@ class ExportController extends Controller
                         <td style="text-align:right">' . number_format($e->amount, 2, ',', ' ') . ' €</td>
                     </tr>';
             }
-            
+
             $html .= '
                     </tbody>
                     <tfoot>
@@ -66,10 +66,9 @@ class ExportController extends Controller
                 </table>
             </body>
             </html>';
-            
+
             $pdf = Pdf::loadHTML($html);
             return $pdf->download("depenses_{$period}.pdf");
-            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
