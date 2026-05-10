@@ -6,6 +6,7 @@ use App\Http\Controllers\ExpenseController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\BudgetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,8 +34,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/expenses/{id}', [ExpenseController::class, 'show']);
     Route::put('/expenses/{id}', [ExpenseController::class, 'update']);
     Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy']);
-    Route::get('/export/pdf', [ExportController::class, 'export']);     
+    Route::get('/export/pdf', [ExportController::class, 'export']);
 
+    //routes budgets
+
+     Route::apiResource('budgets', BudgetController::class);
+     Route::get('/budgets/summary', [BudgetController::class, 'summary']);
 });
 
 
