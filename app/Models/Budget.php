@@ -27,16 +27,31 @@ class Budget extends Model
         return $query->where('user_id', auth()->id());
     }
 
-    public function scopeByYear(Builder $query, $year): Builder
-    {
-        return $query->whereYear('month', $year);
-    }
+    // public function scopeByYear(Builder $query, $year): Builder
+    // {
+    //     return $query->whereYear('month', $year);
+    // }
 
 
-    public function scopeByMonth(Builder $query, $month): Builder
-    {
-        return $query->whereMonth('month', $month);
-    }
+    // public function scopeByMonth(Builder $query, $month): Builder
+    // {
+    //     return $query->whereMonth('month', $month);
+    // }
+    public function scopeByPeriod(Builder $query, string $period): Builder
+{
+    return match ($period) {
+
+        'month' => $query
+            ->whereMonth('month', Carbon::now()->month)
+            ->whereYear('month', Carbon::now()->year),
+
+        'year' => $query
+            ->whereYear('month', Carbon::now()->year),
+
+        default => $query,
+    };
+}
+
 
     public function scopeCurrentMonth(Builder $query): Builder
     {
