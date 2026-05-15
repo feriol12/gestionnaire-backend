@@ -38,8 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //routes budgets
 
+    Route::get('/budgets/summary', [BudgetController::class, 'summary']);
      Route::apiResource('budgets', BudgetController::class);
-     Route::get('/budgets/summary', [BudgetController::class, 'summary']);
 });
 
 

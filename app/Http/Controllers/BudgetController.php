@@ -14,18 +14,23 @@ class BudgetController extends Controller
     // Liste des budgets de l'utilisateur connecté
    public function index(Request $request)
 {
-    $query = Budget::forUser();
+    // $query = Budget::forUser();
 
     // ✅ La correction est ICI
-        if ($request->filled('year')) {
-            $query->byYear($request->year);  // Maintenant ça fonctionne !
-        }
+        // if ($request->filled('year')) {
+        //     $query->byYear($request->year);  // Maintenant ça fonctionne !
+        // }
 
-        if ($request->filled('month')) {
-            $query->byMonth($request->month); // Maintenant ça fonctionne !
-        }
+        // if ($request->filled('month')) {
+        //     $query->byMonth($request->month); // Maintenant ça fonctionne !
+        // }
+         $period = $request->get('period', 'month');
 
-    $budgets = $query->orderBy('month', 'desc')->get();
+         $budgets = Budget::forUser()
+        ->byPeriod($period)
+        ->orderBy('month', 'desc')
+        ->get();
+
 
     // return response()->json($budgets);
     return new BudgetCollection($budgets);
@@ -96,7 +101,7 @@ class BudgetController extends Controller
 {
     return response()->json([
         'current_month_total' => Budget::forUser()
-            ->currentMonth()
+            ->byPeriod('month')
             ->sum('amount'),
 
         'last_month_total' => Budget::forUser()
@@ -104,7 +109,7 @@ class BudgetController extends Controller
             ->sum('amount'),
 
         'year_total' => Budget::forUser()
-            ->byYear(now()->year)
+            ->byPeriod('year')
             ->sum('amount'),
     ]);
 }
