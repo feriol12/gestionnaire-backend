@@ -7,6 +7,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\BudgetExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +40,10 @@ Route::middleware('auth:sanctum')->group(function () {
     //routes budgets
 
     Route::get('/budgets/summary', [BudgetController::class, 'summary']);
+    Route::get(
+    '/export/budgets/pdf',
+    [BudgetExportController::class, 'export']
+);
      Route::apiResource('budgets', BudgetController::class);
 });
 
