@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BudgetExportController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
     [BudgetExportController::class, 'export']
 );
      Route::apiResource('budgets', BudgetController::class);
+     //route dashboard
+     Route::get('/dashboard/categories', [DashboardController::class, 'categories']);
 });
 
 
