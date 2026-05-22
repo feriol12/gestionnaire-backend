@@ -48,6 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::apiResource('budgets', BudgetController::class);
      //route dashboard
      Route::get('/dashboard/categories', [DashboardController::class, 'categories']);
+     Route::get('/dashboard/evolution', [DashboardController::class, 'evolution']);
+     Route::get('/dashboard/recent-transactions', [DashboardController::class, 'recentTransactions']);
 });
 
 
