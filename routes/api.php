@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 
     //routes expenses
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'activity.check'])->group(function () {
     Route::get('/expenses', [ExpenseController::class, 'index']);
     Route::get('/expenses/summary', [ExpenseController::class, 'summary']);
     Route::post('/expenses', [ExpenseController::class, 'store']);
