@@ -43,7 +43,7 @@ class CheckLastActivity
             'threshold' => 5
         ]);
 
-        if ($inactiveMinutes > 5) {
+        if ($inactiveMinutes > 1440) { // 1440 minutes = 24 heures
             // Révoquer le token actuel
             $user->currentAccessToken()->delete();
 
