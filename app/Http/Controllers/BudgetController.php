@@ -111,6 +111,10 @@ class BudgetController extends Controller
         'year_total' => Budget::forUser()
             ->byPeriod('year')
             ->sum('amount'),
+
+        'last_year_total' => Budget::forUser()
+            ->whereYear('month', now()->subYear()->year)
+            ->sum('amount'),
     ]);
 }
 }
