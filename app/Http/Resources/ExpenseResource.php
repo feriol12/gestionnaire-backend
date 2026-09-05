@@ -22,7 +22,7 @@ class ExpenseResource extends JsonResource
             'id' => $this->id,
             'description' => $this->description,
             'amount' => (float) $this->amount,
-            'formatted_amount' => number_format($this->amount, 2, ',', ' ') . ' €',
+            'formatted_amount' => number_format($this->amount, 0, ',', ' ') . ' FCFA',
             'category' => $this->category,
             'category_icon' => $categoryIcons[$this->category] ?? '📌',
             'date' => $this->date,

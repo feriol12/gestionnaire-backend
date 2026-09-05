@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\Request;
 
 class CheckLastActivity
 {
@@ -13,12 +12,6 @@ class CheckLastActivity
 
         // Si pas d'utilisateur, passer (le middleware auth s'en occupera)
         if (!$user) {
-            return $next($request);
-        }
-
-        // Exclure certaines routes
-        $excludedRoutes = ['api/login', 'api/logout', 'api/register'];
-        if (in_array($request->path(), $excludedRoutes)) {
             return $next($request);
         }
 
@@ -33,15 +26,8 @@ class CheckLastActivity
             return $next($request);
         }
 
-        // Vérifier l'inactivité (5 minutes)
+        // Vérifier l'inactivité (24 heures)
         $inactiveMinutes = now()->diffInMinutes($lastActivity);
-
-        \Log::info('Activity check', [
-            'user_id' => $user->id,
-            'last_activity' => $lastActivity,
-            'inactive_minutes' => $inactiveMinutes,
-            'threshold' => 5
-        ]);
 
         if ($inactiveMinutes > 1440) { // 1440 minutes = 24 heures
             // Révoquer le token actuel
