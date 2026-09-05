@@ -51,7 +51,7 @@ class ExportController extends Controller
                         <td>' . $e->date . '</td>
                         <td>' . $e->description . '</td>
                         <td>' . $e->category . '</td>
-                        <td style="text-align:right">' . number_format($e->amount, 2, ',', ' ') . ' €</td>
+                        <td style="text-align:right">' . number_format($e->amount, 0, ',', ' ') . ' FCFA</td>
                     </tr>';
             }
 
@@ -60,7 +60,7 @@ class ExportController extends Controller
                     <tfoot>
                         <tr>
                             <td colspan="3"><strong>Total</strong></td>
-                            <td style="text-align:right"><strong>' . number_format($total, 2, ',', ' ') . ' €</strong></td>
+                            <td style="text-align:right"><strong>' . number_format($total, 0, ',', ' ') . ' FCFA</strong></td>
                         </tr>
                     </tfoot>
                 </table>
