@@ -15,7 +15,8 @@ class ExpenseResource extends JsonResource
             'Transport' => '🚕',
             'Factures' => '💡',
             'Loisirs' => '🎮',
-            'Imprévu' => '⚠️'
+            'Imprévu' => '⚠️',
+            'Beauté & soins' => '💅'
         ];
         
         return [

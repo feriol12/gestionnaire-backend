@@ -7,11 +7,15 @@ use App\Http\Resources\ExpenseResource;
 use App\Http\Resources\ExpenseCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use App\Rules\CurrentMonthDate;
 
 
 class ExpenseController extends Controller
 {
+    // Catégories autorisées (même ordre que la contrainte de la colonne expenses.category)
+    private const CATEGORIES = ['Nourriture', 'Transport', 'Factures', 'Loisirs', 'Imprévu', 'Beauté & soins'];
+
     public function __construct()
     {
         $this->middleware('auth:sanctum');
@@ -36,7 +40,7 @@ class ExpenseController extends Controller
         $validator = Validator::make($request->all(), [
             'description' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0.01|max:99999999.99',
-            'category' => 'required|in:Nourriture,Transport,Factures,Loisirs,Imprévu',
+            'category' => ['required', Rule::in(self::CATEGORIES)],
             'date' => ['required', 'date', new CurrentMonthDate()], // ← ICI la nouvelle règle
         ],   [
             'amount.max' => 'Le montant ne peut pas dépasser 99 999 999,99 FCFA.',
@@ -82,7 +86,7 @@ class ExpenseController extends Controller
         $validator = Validator::make($request->all(), [
             'description' => 'sometimes|string|max:255',
             'amount' => 'sometimes|numeric|min:0.01',
-            'category' => 'sometimes|in:Nourriture,Transport,Factures,Loisirs,Imprévu',
+            'category' => ['sometimes', Rule::in(self::CATEGORIES)],
             'date' => ['sometimes', 'date', new CurrentMonthDate()], // ← ICI aussi
         ]);
 
