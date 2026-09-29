@@ -108,4 +108,19 @@ return [
 
     'prefix' => env('CACHE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_cache_'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Serializable Classes
+    |--------------------------------------------------------------------------
+    |
+    | Classes PHP autorisées à la désérialisation d'une valeur mise en cache
+    | (Laravel 13). L'application ne met aucun objet en cache (seulement des
+    | scalaires, ex. compteurs du rate limiter) : false interdit toute
+    | reconstruction d'objet et ferme la voie aux gadgets de désérialisation
+    | si le stockage du cache était compromis. SEC-AUTH-02A.
+    |
+    */
+
+    'serializable_classes' => false,
+
 ];
