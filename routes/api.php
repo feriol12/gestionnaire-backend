@@ -21,9 +21,11 @@ use App\Http\Controllers\DashboardController;
 |
 */
 // AUTH
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Limiteurs dédiés (SEC-006, voir RouteServiceProvider), en plus du limiteur générique "api"
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 // Protégez la route logout avec Sanctum
+// Volontairement SANS activity.check : un jeton inactif doit pouvoir être révoqué.
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 // Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -55,7 +57,7 @@ Route::middleware(['auth:sanctum', 'activity.check'])->group(function () {
 
 
 
-//User  protegé par sanctum
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//User  protegé par sanctum + contrôle d'inactivité (SEC-009)
+Route::middleware(['auth:sanctum', 'activity.check'])->get('/user', function (Request $request) {
     return $request->user();
 });

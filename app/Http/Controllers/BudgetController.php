@@ -49,14 +49,28 @@ class BudgetController extends Controller
         ], 201);
     }
 
-    // Afficher un budget
-    public function show(Budget $budget)
+    // SEC-003 : le budget est résolu dans le périmètre de l'utilisateur
+    // connecté (même schéma que ExpenseController). Un budget d'un autre
+    // utilisateur et un budget inexistant donnent la même réponse 404.
+    private function findOwnedBudget($id): ?Budget
     {
-        // sécurité
-        if ($budget->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => 'Non autorisé'
-            ], 403);
+        return Budget::forUser()->find($id);
+    }
+
+    private function budgetNotFound()
+    {
+        return response()->json([
+            'message' => 'Budget non trouvé'
+        ], 404);
+    }
+
+    // Afficher un budget
+    public function show($id)
+    {
+        $budget = $this->findOwnedBudget($id);
+
+        if (!$budget) {
+            return $this->budgetNotFound();
         }
 
         // return response()->json($budget);
@@ -64,12 +78,12 @@ class BudgetController extends Controller
     }
 
     // Modifier budget
-    public function update(UpdateBudgetRequest $request, Budget $budget)
+    public function update(UpdateBudgetRequest $request, $id)
     {
-        if ($budget->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => 'Non autorisé'
-            ], 403);
+        $budget = $this->findOwnedBudget($id);
+
+        if (!$budget) {
+            return $this->budgetNotFound();
         }
 
         $budget->update($request->validated());
@@ -81,12 +95,12 @@ class BudgetController extends Controller
     }
 
     // Supprimer budget
-    public function destroy(Budget $budget)
+    public function destroy($id)
     {
-        if ($budget->user_id !== auth()->id()) {
-            return response()->json([
-                'message' => 'Non autorisé'
-            ], 403);
+        $budget = $this->findOwnedBudget($id);
+
+        if (!$budget) {
+            return $this->budgetNotFound();
         }
 
         $budget->delete();

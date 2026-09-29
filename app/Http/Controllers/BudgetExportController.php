@@ -65,7 +65,7 @@ class BudgetExportController extends Controller
 
             <body>
 
-                <h2>Budgets - ' . $period . '</h2>
+                <h2>Budgets - ' . e($period) . '</h2>
 
                 <p>
                     Export du ' . Carbon::now()->format('d/m/Y H:i') . '
@@ -86,7 +86,7 @@ class BudgetExportController extends Controller
 
                 $html .= '
                     <tr>
-                        <td>' . Carbon::parse($budget->month)->format('m/Y') . '</td>
+                        <td>' . e(Carbon::parse($budget->month)->format('m/Y')) . '</td>
 
                         <td style="text-align:right">
                             ' . number_format($budget->amount, 0, ',', ' ') . ' FCFA
@@ -120,13 +120,15 @@ class BudgetExportController extends Controller
 
             return $pdf->download("budgets_{$period}.pdf");
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            // SEC-002 : le détail de l'erreur reste côté serveur (logs),
+            // jamais dans la réponse HTTP.
+            report($e);
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
+                'error' => 'Impossible de générer le PDF des budgets.',
             ], 500);
         }
     }
