@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Http\Middleware\VerifyCsrfToken;
+use App\Http\Middleware\PreventRequestForgery;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -132,9 +132,9 @@ class SanctumBearerCompatibilityTest extends TestCase
      */
     public function test_sanctum_4_csrf_middleware_configuration_keeps_the_api_exemption(): void
     {
-        $this->assertSame(VerifyCsrfToken::class, config('sanctum.middleware.validate_csrf_token'));
+        $this->assertSame(PreventRequestForgery::class, config('sanctum.middleware.validate_csrf_token'));
         $this->assertNull(config('sanctum.middleware.verify_csrf_token'));
 
-        $this->assertContains('api/*', $this->app->make(VerifyCsrfToken::class)->getExcludedPaths());
+        $this->assertContains('api/*', $this->app->make(PreventRequestForgery::class)->getExcludedPaths());
     }
 }
