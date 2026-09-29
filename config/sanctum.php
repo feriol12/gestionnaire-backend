@@ -74,10 +74,13 @@ return [
     |
     */
 
+    // Sanctum 4 key name (was verify_csrf_token). The app-level CSRF class is
+    // kept on purpose: it subclasses the framework's VerifyCsrfToken (of which
+    // ValidateCsrfToken is an empty alias) and keeps the api/* exemption.
     'middleware' => [
         'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
         'encrypt_cookies' => App\Http\Middleware\EncryptCookies::class,
-        'verify_csrf_token' => App\Http\Middleware\VerifyCsrfToken::class,
+        'validate_csrf_token' => App\Http\Middleware\VerifyCsrfToken::class,
     ],
 
 ];

@@ -27,7 +27,10 @@ class CheckLastActivity
         }
 
         // Vérifier l'inactivité (24 heures)
-        $inactiveMinutes = now()->diffInMinutes($lastActivity);
+        // Carbon 3 : diffInMinutes() est signé et fractionnaire (now() vs une
+        // date passée => valeur négative). On conserve la sémantique Carbon 2 :
+        // minutes entières d'inactivité, en valeur absolue.
+        $inactiveMinutes = (int) now()->diffInMinutes($lastActivity, true);
 
         if ($inactiveMinutes > 1440) { // 1440 minutes = 24 heures
             // Révoquer le token actuel
