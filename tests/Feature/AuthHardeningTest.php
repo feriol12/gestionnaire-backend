@@ -35,7 +35,10 @@ class AuthHardeningTest extends TestCase
 
     private function login(array $payload, string $ip = '203.0.113.10')
     {
-        return $this->withServerVariables(['REMOTE_ADDR' => $ip])->postJson('/api/login', $payload);
+        // AUTH3-01 : la connexion est une connexion de session, réservée au SPA
+        // (origine « stateful ») ; la CSRF est contournée en tests unitaires.
+        return $this->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->postJson('/api/login', $payload, ['Origin' => 'http://localhost:5173']);
     }
 
     private function register(array $payload, string $ip = '203.0.113.10')

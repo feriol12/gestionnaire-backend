@@ -9,12 +9,13 @@ class PreventRequestForgery extends Middleware
     /**
      * The URIs that should be excluded from request forgery verification.
      *
-     * The API authenticates with Sanctum Bearer tokens (no session cookie),
-     * so CSRF/origin verification does not apply to it.
+     * AUTH3-01 : aucune exclusion. Le navigateur s'authentifie par cookie de
+     * session (Sanctum SPA) : Sanctum applique ce middleware à toute requête
+     * API venant d'un domaine « stateful », qui doit donc porter X-XSRF-TOKEN.
+     * Les clients non navigateur authentifiés par jeton Bearer ne sont pas
+     * « stateful » : Sanctum ne leur applique pas ce middleware.
      *
      * @var array<int, string>
      */
-    protected $except = [
-        'api/*',
-    ];
+    protected $except = [];
 }

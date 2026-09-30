@@ -10,8 +10,10 @@ use Tests\TestCase;
 /*
  * SEC-AUTH-01C — le flux d'authentification Bearer (Sanctum personal access
  * token) doit rester fonctionnellement identique après Laravel 12 / Sanctum 4.
- * Tests de compatibilité uniquement : ils figent le contrat ACTUEL de l'API,
- * pas un comportement cible (AUTH V3).
+ * AUTH3-01 — le navigateur n'utilise plus de jeton (session Sanctum SPA, voir
+ * SessionAuthenticationTest) et /api/login n'en émet plus ; l'infrastructure
+ * des jetons personnels reste disponible pour les clients non navigateur :
+ * ces tests vérifient qu'un jeton émis côté serveur authentifie toujours.
  */
 class SanctumBearerCompatibilityTest extends TestCase
 {
@@ -19,19 +21,9 @@ class SanctumBearerCompatibilityTest extends TestCase
 
     private const PASSWORD = 'secret-password-123';
 
-    private function loginAndGetToken(User $user): string
+    private function issueToken(User $user): string
     {
-        $response = $this->postJson('/api/login', [
-            'email' => $user->email,
-            'password' => self::PASSWORD,
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('message', 'Logged in')
-            ->assertJsonPath('user.id', $user->id);
-
-        $token = $response->json('token');
-        $this->assertIsString($token);
+        $token = $user->createToken('api-client')->plainTextToken;
         $this->assertMatchesRegularExpression('/^\d+\|\S+$/', $token);
 
         // Each request must authenticate on its own Bearer header, not on a
@@ -69,11 +61,11 @@ class SanctumBearerCompatibilityTest extends TestCase
         $this->assertSame(0, User::where('email', 'compat@example.test')->first()->tokens()->count());
     }
 
-    public function test_login_issues_a_bearer_token_that_authenticates_protected_routes(): void
+    public function test_a_personal_access_token_still_authenticates_protected_routes(): void
     {
         $user = User::factory()->create(['password' => self::PASSWORD]);
 
-        $token = $this->loginAndGetToken($user);
+        $token = $this->issueToken($user);
         $this->assertSame(1, $user->tokens()->count());
 
         $this->withToken($token)->getJson('/api/user')
@@ -97,7 +89,7 @@ class SanctumBearerCompatibilityTest extends TestCase
     public function test_authenticated_pdf_export_still_returns_a_pdf(): void
     {
         $user = User::factory()->create(['password' => self::PASSWORD]);
-        $token = $this->loginAndGetToken($user);
+        $token = $this->issueToken($user);
 
         $response = $this->withToken($token)->get('/api/export/pdf');
 
@@ -110,7 +102,7 @@ class SanctumBearerCompatibilityTest extends TestCase
     public function test_logout_revokes_the_current_token_and_it_cannot_be_reused(): void
     {
         $user = User::factory()->create(['password' => self::PASSWORD]);
-        $token = $this->loginAndGetToken($user);
+        $token = $this->issueToken($user);
 
         $this->withToken($token)->postJson('/api/logout')
             ->assertOk()
@@ -123,18 +115,29 @@ class SanctumBearerCompatibilityTest extends TestCase
         $this->withToken($token)->getJson('/api/expenses')->assertUnauthorized();
     }
 
+    public function test_login_no_longer_issues_tokens_to_non_browser_clients(): void
+    {
+        $user = User::factory()->create(['password' => self::PASSWORD]);
+
+        // No first-party (stateful) origin: no session, so no login and no token.
+        $this->postJson('/api/login', ['email' => $user->email, 'password' => self::PASSWORD])
+            ->assertForbidden()
+            ->assertJsonMissingPath('token');
+
+        $this->assertSame(0, $user->tokens()->count());
+    }
+
     /**
      * Sanctum 4 reads sanctum.middleware.validate_csrf_token. MONEVA keeps its
-     * own CSRF middleware there so that stateful (first-party origin) requests
-     * keep the existing api/* exemption. Asserted on configuration directly:
-     * the framework CSRF middleware always bypasses itself during unit tests,
-     * so an HTTP request here could not prove anything.
+     * own CSRF middleware there; since AUTH3-01 it exempts no path, so every
+     * stateful (first-party origin) API write is CSRF-protected. Real HTTP
+     * behaviour is covered in SessionAuthenticationTest.
      */
-    public function test_sanctum_4_csrf_middleware_configuration_keeps_the_api_exemption(): void
+    public function test_sanctum_4_csrf_middleware_configuration_protects_the_api(): void
     {
         $this->assertSame(PreventRequestForgery::class, config('sanctum.middleware.validate_csrf_token'));
         $this->assertNull(config('sanctum.middleware.verify_csrf_token'));
 
-        $this->assertContains('api/*', $this->app->make(PreventRequestForgery::class)->getExcludedPaths());
+        $this->assertSame([], $this->app->make(PreventRequestForgery::class)->getExcludedPaths());
     }
 }
