@@ -13,9 +13,11 @@ use Tests\TestCase;
 
 /*
  * SEC-AUTH-01D — Laravel 13 renamed the CSRF middleware to PreventRequestForgery
- * and added Sec-Fetch-Site origin verification. MONEVA must keep:
- *  - the Bearer API (api/*) exempt, so API writes never become 419;
- *  - request forgery protection active on everything else (web routes).
+ * and added Sec-Fetch-Site origin verification.
+ * AUTH3-01 — the browser now authenticates with a Sanctum session cookie, so
+ * the former api/* exemption is gone: request forgery protection applies to
+ * every stateful write, API included (Sanctum only runs it for stateful,
+ * first-party requests; Bearer clients are not affected).
  *
  * The framework middleware skips itself whenever runningUnitTests() is true,
  * so an HTTP feature test cannot prove its behavior. The behavioral cases
@@ -81,9 +83,9 @@ class RequestForgeryCompatibilityTest extends TestCase
         }
     }
 
-    public function test_api_paths_are_the_only_exemption(): void
+    public function test_no_path_is_exempt_from_request_forgery_protection(): void
     {
-        $this->assertSame(['api/*'], $this->app->make(PreventRequestForgery::class)->getExcludedPaths());
+        $this->assertSame([], $this->app->make(PreventRequestForgery::class)->getExcludedPaths());
     }
 
     public function test_the_unmodified_middleware_is_bypassed_under_unit_tests(): void
@@ -94,13 +96,14 @@ class RequestForgeryCompatibilityTest extends TestCase
         $this->assertSame('passed', $this->runThrough($plain, 'POST', '/web-form', ['Sec-Fetch-Site' => 'cross-site']));
     }
 
-    public function test_bearer_api_writes_are_never_rejected_for_missing_csrf_token(): void
+    public function test_stateful_api_writes_require_the_csrf_token(): void
     {
         $probe = $this->probe();
 
-        foreach (['POST' => '/api/expenses', 'PUT' => '/api/expenses/1', 'DELETE' => '/api/budgets/1'] as $method => $uri) {
-            $this->assertSame('passed', $this->runThrough($probe, $method, $uri, ['Sec-Fetch-Site' => 'cross-site']), "$method $uri");
-            $this->assertSame('passed', $this->runThrough($probe, $method, $uri), "$method $uri without Sec-Fetch-Site");
+        foreach ([['POST', '/api/expenses'], ['PUT', '/api/expenses/1'], ['DELETE', '/api/budgets/1'], ['POST', '/api/login']] as [$method, $uri]) {
+            $this->assertSame('rejected', $this->runThrough($probe, $method, $uri, ['Sec-Fetch-Site' => 'same-site']), "$method $uri without token");
+            $this->assertSame('rejected', $this->runThrough($probe, $method, $uri), "$method $uri without token nor Sec-Fetch-Site");
+            $this->assertSame('passed', $this->runThrough($probe, $method, $uri, ['Sec-Fetch-Site' => 'same-site'], true), "$method $uri with token");
         }
     }
 

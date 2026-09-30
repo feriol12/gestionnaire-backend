@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -32,25 +33,33 @@ class AuthController extends Controller
 
     public function login(Request $request)
 {
-    $request->validate([
+    $credentials = $request->validate([
         'email' => 'required|email',
         'password' => 'required|string'
     ]);
 
-    $user = User::where('email', $request->email)->first();
+    // AUTH3-01 : authentification navigateur par session (Sanctum SPA).
+    // Sanctum ne démarre une session que pour un domaine « stateful » ;
+    // sans session, aucune connexion n'est possible (et aucun jeton n'est émis).
+    if (! $request->hasSession()) {
+        return response()->json(['message' => 'Session authentication required'], 403);
+    }
 
-    if (!$user || !Hash::check($request->password, $user->password)) {
+    if (! Auth::guard('web')->attempt($credentials)) {
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
-        // 🔥 AJOUTEZ CETTE LIGNE - Initialiser last_activity
+
+    // Nouvel identifiant de session après authentification (anti-fixation).
+    $request->session()->regenerate();
+
+    $user = Auth::guard('web')->user();
+
+    // 🔥 AJOUTEZ CETTE LIGNE - Initialiser last_activity
     $user->last_activity = now();
     $user->save();
-    
-    $token = $user->createToken('auth_token')->plainTextToken;
 
     return response()->json([
         'message' => 'Logged in',
-        'token' => $token,
         'user' => $user
     ]);
 }
@@ -65,8 +74,18 @@ class AuthController extends Controller
     // }
     public function logout(Request $request)
 {
-    // Supprimer le token actuel de l'utilisateur
-    $request->user()->currentAccessToken()->delete();
+    // Client non navigateur authentifié par jeton personnel : révoquer ce jeton.
+    $token = $request->user()->currentAccessToken();
+    if ($token instanceof PersonalAccessToken) {
+        $token->delete();
+    }
+
+    // Navigateur (session Sanctum) : fermer la session et renouveler le jeton CSRF.
+    if ($request->hasSession()) {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
 
     return response()->json(['message' => 'Logged out successfully']);
 }

@@ -26,7 +26,12 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('throt
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 // Protégez la route logout avec Sanctum
 // Volontairement SANS activity.check : un jeton inactif doit pouvoir être révoqué.
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+// AUTH3-01 (A3-F1) : et SANS le limiteur générique « api » (60/min) : un budget de
+// requêtes épuisé ne doit jamais empêcher la fermeture de la session. Session,
+// CSRF (Sanctum stateful) et auth:sanctum restent appliqués.
+Route::middleware('auth:sanctum')
+    ->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':api')
+    ->post('/logout', [AuthController::class, 'logout']);
 // Route::post('/logout', [AuthController::class, 'logout']);
 
     //routes expenses
