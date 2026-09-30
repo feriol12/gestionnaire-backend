@@ -27,10 +27,12 @@ class Budget extends Model
         return $query->where('user_id', auth()->id());
     }
 
-    // public function scopeByYear(Builder $query, $year): Builder
-    // {
-    //     return $query->whereYear('month', $year);
-    // }
+    // Utilisé par l'export PDF annuel (BudgetExportController, period=year).
+    // `month` est une DATE (1er jour du mois) : même sémantique que byPeriod('year').
+    public function scopeByYear(Builder $query, int $year): Builder
+    {
+        return $query->whereYear('month', $year);
+    }
 
 
     // public function scopeByMonth(Builder $query, $month): Builder
