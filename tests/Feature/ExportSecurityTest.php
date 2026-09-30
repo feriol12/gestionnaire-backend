@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\User;
 use Barryvdh\DomPDF\PDF;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Exceptions;
 use Laravel\Sanctum\Sanctum;
 use RuntimeException;
@@ -18,10 +19,15 @@ use Tests\TestCase;
  *    mais reste signalée côté serveur (report()).
  *  - SEC-005 : les valeurs utilisateur sont échappées dans le HTML envoyé à
  *    DomPDF, et le PDF réel reste produit.
+ *  - R-01 : l'export annuel des budgets (period=year) fonctionne, ne contient
+ *    que les budgets de l'utilisateur pour l'année en cours, et l'export
+ *    mensuel reste inchangé.
  */
 class ExportSecurityTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const NOW = '2026-09-15 12:00:00';
 
     private const SECRET = 'INTERNAL_TEST_SECRET';
 
@@ -37,6 +43,13 @@ class ExportSecurityTest extends TestCase
 
         $this->user = User::factory()->create();
         Sanctum::actingAs($this->user);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     /**
@@ -190,5 +203,102 @@ class ExportSecurityTest extends TestCase
 
         $this->assertFalse($options->getIsRemoteEnabled());
         $this->assertFalse($options->getIsPhpEnabled());
+    }
+
+    // ---------------------------------------------------------------- R-01
+
+    private function budgetFor(User $user, string $month, int $amount): Budget
+    {
+        return Budget::create(['user_id' => $user->id, 'month' => $month, 'amount' => $amount]);
+    }
+
+    /**
+     * Current year 2026: two own budgets in 2026 (one outside the current
+     * month), one own budget in 2025, and a foreign budget in 2026.
+     */
+    private function seedBudgetsAcrossYearsAndUsers(): void
+    {
+        Carbon::setTestNow(Carbon::parse(self::NOW));
+
+        $this->budgetFor($this->user, '2026-03-01', 111111);
+        $this->budgetFor($this->user, '2026-09-01', 222222);
+        $this->budgetFor($this->user, '2025-12-01', 555555);
+        $this->budgetFor(User::factory()->create(), '2026-05-01', 444444);
+    }
+
+    private function exportBudgets(string $period, ?string &$html): \Illuminate\Testing\TestResponse
+    {
+        $this->captureHtmlPassedToDompdf($html);
+
+        $response = $this->get('/api/export/budgets/pdf?period='.$period);
+
+        $response->assertOk();
+        $this->assertStringStartsWith('application/pdf', (string) $response->headers->get('Content-Type'));
+        $this->assertStringStartsWith('%PDF', $response->getContent());
+        $this->assertIsString($html);
+
+        return $response;
+    }
+
+    public function test_annual_budget_export_contains_only_own_budgets_of_the_current_year(): void
+    {
+        $this->seedBudgetsAcrossYearsAndUsers();
+        Exceptions::fake();
+
+        $html = null;
+        $response = $this->exportBudgets('year', $html);
+
+        Exceptions::assertNothingReported(); // no undefined scope / BadMethodCallException
+        $this->assertStringContainsString('budgets_year.pdf', (string) $response->headers->get('Content-Disposition'));
+
+        // Own budgets of the current year, including a month other than the current one.
+        $this->assertStringContainsString('<td>03/2026</td>', $html);
+        $this->assertStringContainsString('<td>09/2026</td>', $html);
+        $this->assertStringContainsString('111 111 FCFA', $html);
+        $this->assertStringContainsString('222 222 FCFA', $html);
+        $this->assertStringContainsString('333 333 FCFA', $html); // total of the two
+
+        // Own budget of another year: excluded.
+        $this->assertStringNotContainsString('<td>12/2025</td>', $html);
+        $this->assertStringNotContainsString('555 555', $html);
+
+        // Another user's budget of the same year: excluded.
+        $this->assertStringNotContainsString('<td>05/2026</td>', $html);
+        $this->assertStringNotContainsString('444 444', $html);
+
+        // Newest month first, as before.
+        $this->assertLessThan(strpos($html, '<td>03/2026</td>'), strpos($html, '<td>09/2026</td>'));
+    }
+
+    public function test_annual_budget_export_of_a_year_without_budgets_is_an_empty_valid_pdf(): void
+    {
+        Carbon::setTestNow(Carbon::parse(self::NOW));
+        $this->budgetFor($this->user, '2025-12-01', 555555);
+        Exceptions::fake();
+
+        $html = null;
+        $this->exportBudgets('year', $html);
+
+        Exceptions::assertNothingReported();
+        $this->assertStringNotContainsString('555 555', $html);
+        $this->assertStringNotContainsString('<td>12/2025</td>', $html);
+        $this->assertStringContainsString('0 FCFA', $html);
+    }
+
+    public function test_monthly_budget_export_is_unchanged(): void
+    {
+        $this->seedBudgetsAcrossYearsAndUsers();
+        Exceptions::fake();
+
+        $html = null;
+        $response = $this->exportBudgets('month', $html);
+
+        Exceptions::assertNothingReported();
+        $this->assertStringContainsString('budgets_month.pdf', (string) $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('<td>09/2026</td>', $html);
+        $this->assertStringContainsString('222 222 FCFA', $html);
+        $this->assertStringNotContainsString('<td>03/2026</td>', $html);
+        $this->assertStringNotContainsString('<td>12/2025</td>', $html);
+        $this->assertStringNotContainsString('<td>05/2026</td>', $html);
     }
 }
