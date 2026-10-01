@@ -59,6 +59,11 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    // AUTH3-03 : origine du SPA (première entrée de FRONTEND_URL, qui peut en
+    // lister plusieurs pour CORS) ; sert à construire le lien de
+    // réinitialisation du mot de passe envoyé par email.
+    'frontend_url' => rtrim(explode(',', (string) env('FRONTEND_URL', 'http://localhost:5173'))[0], '/'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

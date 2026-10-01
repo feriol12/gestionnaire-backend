@@ -9,6 +9,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BudgetExportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PasswordResetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,6 +25,9 @@ use App\Http\Controllers\DashboardController;
 // Limiteurs dédiés (SEC-006, voir RouteServiceProvider), en plus du limiteur générique "api"
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+// AUTH3-03 : récupération de mot de passe (publique, CSRF pour le SPA, limiteurs dédiés)
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:forgot-password');
+Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:reset-password');
 // Protégez la route logout avec Sanctum
 // Volontairement SANS activity.check : un jeton inactif doit pouvoir être révoqué.
 // AUTH3-01 (A3-F1) : et SANS le limiteur générique « api » (60/min) : un budget de
