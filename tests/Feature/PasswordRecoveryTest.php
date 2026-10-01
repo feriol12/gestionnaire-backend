@@ -288,12 +288,12 @@ class PasswordRecoveryTest extends TestCase
     // ---------------------------------------------------------------- session / PAT policy
 
     /**
-     * Documents the reset policy (finding A303-F1): browser sessions of the
-     * account are closed by Sanctum's AuthenticateSession (password hash
-     * check) on their next request; existing personal access tokens are NOT
-     * revoked by a password reset.
+     * Documents the reset policy: browser sessions of the account are closed
+     * by Sanctum's AuthenticateSession (password hash check) on their next
+     * request. AUTH3-05 (closes A303-F1): the account's personal access tokens
+     * are revoked by a password reset as well.
      */
-    public function test_policy_after_reset_closes_browser_sessions_but_keeps_personal_access_tokens(): void
+    public function test_policy_after_reset_closes_browser_sessions_and_revokes_personal_access_tokens(): void
     {
         $user = User::factory()->create(['password' => self::PASSWORD]);
         $this->sessionLogin('A', $user->email, self::PASSWORD)->assertOk();
@@ -309,7 +309,10 @@ class PasswordRecoveryTest extends TestCase
         $this->browser('A', 'GET', '/api/user')->assertUnauthorized();
         $this->browser('B', 'GET', '/api/user')->assertUnauthorized();
 
+        // Client par jeton seul : aucun reste de session en mémoire du processus de test.
         $this->app['auth']->forgetGuards();
-        $this->withToken($pat)->getJson('/api/user')->assertOk(); // A303-F1: PAT survives the reset
+        $this->app['session.store']->flush();
+        $this->withToken($pat)->getJson('/api/user')->assertUnauthorized(); // AUTH3-05: PAT revoked by the reset
+        $this->assertSame(0, $user->tokens()->count());
     }
 }

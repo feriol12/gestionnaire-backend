@@ -39,8 +39,11 @@ class EmailVerificationTest extends TestCase
 
     private const PASSWORD = 'secret-password-123';
 
-    /** Routes authentifiées accessibles sans email vérifié (orientation / fermeture de session). */
-    private const ALLOWED_WHILE_UNVERIFIED = ['GET api/user', 'POST api/logout'];
+    /**
+     * Routes authentifiées accessibles sans email vérifié (orientation / fermeture
+     * de session ; AUTH3-05 : sécurité du compte, changement de mot de passe).
+     */
+    private const ALLOWED_WHILE_UNVERIFIED = ['GET api/user', 'POST api/logout', 'PUT api/user/password'];
 
     /** @var array<string, array<string, string>> cookie jars per test browser */
     private array $jars = [];

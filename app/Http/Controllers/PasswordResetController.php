@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -16,7 +17,8 @@ use Illuminate\Support\Str;
  * broker, notification ResetPassword).
  *
  * Aucune réponse ne révèle si un compte existe, et une réinitialisation
- * réussie ne connecte personne (ni session, ni jeton personnel).
+ * réussie ne connecte personne (ni session, ni jeton personnel). Elle ferme
+ * toutes les sessions existantes et révoque les jetons personnels du compte.
  */
 class PasswordResetController extends Controller
 {
@@ -54,9 +56,18 @@ class PasswordResetController extends Controller
         ]);
 
         $status = Password::reset($credentials, function (User $user, string $password) {
-            $user->forceFill(['password' => Hash::make($password)])
-                ->setRememberToken(Str::random(60));
-            $user->save();
+            // AUTH3-05 : changement d'identifiants = révocation des jetons
+            // personnels de CE compte (jetons hérités de l'ancien modèle
+            // navigateur), dans la même transaction que le nouveau mot de passe.
+            // Les sessions existantes tombent d'elles-mêmes : AuthenticateSession
+            // compare l'empreinte du mot de passe stockée en session.
+            DB::transaction(function () use ($user, $password) {
+                $user->forceFill(['password' => Hash::make($password)])
+                    ->setRememberToken(Str::random(60));
+                $user->save();
+
+                $user->tokens()->delete();
+            });
 
             event(new PasswordReset($user));
         });
