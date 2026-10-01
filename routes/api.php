@@ -10,6 +10,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BudgetExportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailVerificationController;
+use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PasswordResetController;
 
 /*
@@ -75,6 +76,12 @@ Route::middleware(['auth:sanctum', 'activity.check', 'verified'])->group(functio
 
 
 
+
+// AUTH3-05 : changement de mot de passe (sécurité du compte, pas une donnée
+// métier : pas de « verified », une session non vérifiée peut protéger son
+// compte). Session + CSRF (pile stateful), inactivité, limiteur dédié.
+Route::middleware(['auth:sanctum', 'activity.check', 'throttle:password-change'])
+    ->put('/user/password', [PasswordController::class, 'update']);
 
 //User  protegé par sanctum + contrôle d'inactivité (SEC-009)
 Route::middleware(['auth:sanctum', 'activity.check'])->get('/user', function (Request $request) {

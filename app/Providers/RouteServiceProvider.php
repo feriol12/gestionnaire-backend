@@ -74,6 +74,13 @@ class RouteServiceProvider extends ServiceProvider
                 ->response(fn () => redirect()->away(config('app.frontend_url').'/verify-email?verification=rate_limited'));
         });
 
+        // AUTH3-05 : changement de mot de passe (route authentifiée) : clé =
+        // identifiant du compte + IP, hachée ; borne les essais sur le mot de
+        // passe actuel depuis une session détournée.
+        RateLimiter::for('password-change', function (Request $request) {
+            return Limit::perMinute(5)->by('password-change|'.hash('sha256', $request->user()?->getAuthIdentifier().'|'.$request->ip()));
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')
