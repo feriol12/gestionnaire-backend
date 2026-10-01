@@ -38,6 +38,24 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by(self::authThrottleKey('register', $request));
         });
 
+        // AUTH3-03 : limiteurs dédiés à la récupération de mot de passe. Même clé
+        // IP + email haché : identique que le compte existe ou non (pas
+        // d'énumération par le limiteur), avec un plafond par IP en plus pour
+        // limiter le balayage de nombreuses adresses depuis une même machine.
+        RateLimiter::for('forgot-password', function (Request $request) {
+            return [
+                Limit::perMinute(3)->by(self::authThrottleKey('forgot-password', $request)),
+                Limit::perMinute(10)->by('forgot-password-ip|'.hash('sha256', (string) $request->ip())),
+            ];
+        });
+
+        RateLimiter::for('reset-password', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by(self::authThrottleKey('reset-password', $request)),
+                Limit::perMinute(20)->by('reset-password-ip|'.hash('sha256', (string) $request->ip())),
+            ];
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')
