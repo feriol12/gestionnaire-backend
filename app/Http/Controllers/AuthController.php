@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
@@ -10,6 +11,8 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
+    public const EMAIL_UNVERIFIED_MESSAGE = 'Veuillez vérifier votre adresse email avant de vous connecter.';
+
     // REGISTER
     public function register(Request $request)
     {
@@ -25,6 +28,17 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // AUTH3-04 : email de vérification (listener natif SendEmailVerificationNotification).
+        // Le compte est déjà créé : un échec d'envoi est signalé côté serveur mais
+        // ne transforme pas l'inscription en erreur (l'utilisateur peut redemander
+        // l'email ; un nouvel essai d'inscription échouerait sur « email déjà pris »).
+        try {
+            event(new Registered($user));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // Contrat inchangé : 200 avec l'utilisateur créé, sans connexion ni jeton.
         return response()->json($user);
     }
 
@@ -45,7 +59,24 @@ class AuthController extends Controller
         return response()->json(['message' => 'Session authentication required'], 403);
     }
 
-    if (! Auth::guard('web')->attempt($credentials)) {
+    // AUTH3-04 : le contrôle d'email vérifié n'intervient qu'une fois le mot de
+    // passe prouvé (callback appelé uniquement pour des identifiants valides),
+    // et AVANT l'ouverture de session : un compte non vérifié n'est jamais connecté.
+    $unverified = false;
+    $authenticated = Auth::guard('web')->attemptWhen($credentials, function (User $user) use (&$unverified) {
+        $unverified = ! $user->hasVerifiedEmail();
+
+        return ! $unverified;
+    });
+
+    if ($unverified) {
+        return response()->json([
+            'message' => self::EMAIL_UNVERIFIED_MESSAGE,
+            'code' => 'EMAIL_UNVERIFIED',
+        ], 403);
+    }
+
+    if (! $authenticated) {
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
 

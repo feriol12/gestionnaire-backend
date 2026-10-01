@@ -86,6 +86,9 @@ class AuthHardeningTest extends TestCase
             'password_confirmation' => 'short',
         ])->assertStatus(422)->assertJsonValidationErrors('password');
 
+        // AUTH3-04 : la connexion exige une adresse vérifiée (lien de l'email).
+        User::where('email', 'string-password@example.test')->firstOrFail()->markEmailAsVerified();
+
         $this->login(['email' => 'string-password@example.test', 'password' => self::PASSWORD])
             ->assertOk()
             ->assertJsonPath('message', 'Logged in');
@@ -161,6 +164,8 @@ class AuthHardeningTest extends TestCase
         ])->assertStatus(429);
 
         // The login bucket for the same IP + email is untouched.
+        // AUTH3-04 : la connexion exige une adresse vérifiée (lien de l'email).
+        User::where('email', 'flood@example.test')->firstOrFail()->markEmailAsVerified();
         $this->login(['email' => 'flood@example.test', 'password' => self::PASSWORD])->assertOk();
     }
 
