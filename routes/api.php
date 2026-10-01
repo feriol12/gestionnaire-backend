@@ -9,6 +9,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BudgetExportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\PasswordResetController;
 
 /*
@@ -28,6 +29,12 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 // AUTH3-03 : récupération de mot de passe (publique, CSRF pour le SPA, limiteurs dédiés)
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:forgot-password');
 Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:reset-password');
+// AUTH3-04 : vérification d'email. Le lien signé fonctionne sans session (pas de
+// connexion automatique) ; le renvoi est public (CSRF pour le SPA, limiteur dédié).
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware('throttle:verification-link')
+    ->name('verification.verify');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware('throttle:verification-resend');
 // Protégez la route logout avec Sanctum
 // Volontairement SANS activity.check : un jeton inactif doit pouvoir être révoqué.
 // AUTH3-01 (A3-F1) : et SANS le limiteur générique « api » (60/min) : un budget de
@@ -40,7 +47,10 @@ Route::middleware('auth:sanctum')
 
     //routes expenses
 
-Route::middleware(['auth:sanctum', 'activity.check'])->group(function () {
+// AUTH3-04 : toutes les ressources métier exigent une adresse email vérifiée
+// (« verified » après activity.check). /user et logout restent accessibles à
+// une session non vérifiée (antérieure à AUTH3-04) pour l'orienter / la fermer.
+Route::middleware(['auth:sanctum', 'activity.check', 'verified'])->group(function () {
     Route::get('/expenses', [ExpenseController::class, 'index']);
     Route::get('/expenses/summary', [ExpenseController::class, 'summary']);
     Route::post('/expenses', [ExpenseController::class, 'store']);

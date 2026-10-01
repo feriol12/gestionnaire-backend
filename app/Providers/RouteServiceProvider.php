@@ -56,6 +56,24 @@ class RouteServiceProvider extends ServiceProvider
             ];
         });
 
+        // AUTH3-04 : renvoi de l'email de vérification, mêmes conventions que la
+        // récupération de mot de passe (clé indépendante de l'existence du compte).
+        RateLimiter::for('verification-resend', function (Request $request) {
+            return [
+                Limit::perMinute(3)->by(self::authThrottleKey('verification-resend', $request)),
+                Limit::perMinute(10)->by('verification-resend-ip|'.hash('sha256', (string) $request->ip())),
+            ];
+        });
+
+        // AUTH3-04 : lien de vérification (GET ouvert depuis l'email), plafond
+        // modeste par IP. Ouvert dans le navigateur : au-delà, retour vers la page
+        // du SPA plutôt qu'une page d'erreur HTML.
+        RateLimiter::for('verification-link', function (Request $request) {
+            return Limit::perMinute(20)
+                ->by('verification-link-ip|'.hash('sha256', (string) $request->ip()))
+                ->response(fn () => redirect()->away(config('app.frontend_url').'/verify-email?verification=rate_limited'));
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')
