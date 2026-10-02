@@ -102,6 +102,13 @@ class PasswordRecoveryTest extends TestCase
         return ['token' => $token, 'email' => $email, 'password' => $password, 'password_confirmation' => $password];
     }
 
+    // PREAUTH-MAIL-01 : le lien est produit par une tâche en file (connexion
+    // database) ; un vrai worker vide la file avant les assertions sur l'envoi.
+    private function runQueueWorker(): void
+    {
+        $this->artisan('queue:work', ['connection' => 'database', '--stop-when-empty' => true, '--sleep' => 0])->run();
+    }
+
     // ---------------------------------------------------------------- forgot-password
 
     public function test_forgot_password_public_response_is_identical_for_known_and_unknown_emails(): void
@@ -120,6 +127,8 @@ class PasswordRecoveryTest extends TestCase
         $this->assertSame($known->getContent(), $unknown->getContent());
         $this->assertSame($known->getContent(), $knownAgain->getContent());
 
+        $this->runQueueWorker();
+
         // Internally only the existing account receives a link (once, broker throttle).
         Notification::assertSentTo($user, ResetPassword::class);
         Notification::assertSentTimes(ResetPassword::class, 1);
@@ -132,6 +141,7 @@ class PasswordRecoveryTest extends TestCase
         $user = User::factory()->create(['email' => 'link+test@example.test']);
         $this->csrf('A');
         $this->forgot('A', $user->email)->assertOk();
+        $this->runQueueWorker();
 
         Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
             $url = $notification->toMail($user)->actionUrl;
@@ -250,6 +260,7 @@ class PasswordRecoveryTest extends TestCase
         $this->reset('A', $this->resetPayload($token, $user->email), false)->assertStatus(419);
 
         Notification::assertNothingSent();
+        $this->assertSame(0, DB::table('jobs')->count(), 'a refused request queues nothing');
         $this->assertTrue(Hash::check(self::PASSWORD, $user->fresh()->password));
     }
 

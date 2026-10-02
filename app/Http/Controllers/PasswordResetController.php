@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendPasswordResetEmailJob;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Support\Timebox;
 
 /*
  * AUTH3-03 — récupération de mot de passe via le Password Broker Laravel
  * (jetons hachés dans password_reset_tokens, expiration et anti-rafale du
  * broker, notification ResetPassword).
+ *
+ * PREAUTH-MAIL-01 : la demande de lien est traitée par une tâche en file
+ * (connexion database) ; voir sendResetLink et SendPasswordResetEmailJob.
  *
  * Aucune réponse ne révèle si un compte existe, et une réinitialisation
  * réussie ne connecte personne (ni session, ni jeton personnel). Elle ferme
@@ -28,21 +34,27 @@ class PasswordResetController extends Controller
 
     public const INVALID_LINK = 'Ce lien de réinitialisation est invalide ou a expiré. Veuillez refaire une demande.';
 
-    public function sendResetLink(Request $request): JsonResponse
+    public function sendResetLink(Request $request, Timebox $timebox): JsonResponse
     {
         $request->validate([
             'email' => 'required|string|email|max:255',
         ]);
 
-        try {
-            // Le statut du broker (envoyé, adresse inconnue, demande trop
-            // rapprochée) n'est volontairement jamais exposé.
-            Password::sendResetLink(['email' => $request->input('email')]);
-        } catch (\Throwable $e) {
-            // Un échec d'envoi ne concerne qu'un compte existant : le signaler
-            // côté serveur sans changer la réponse publique (pas d'énumération).
-            report($e);
-        }
+        // PREAUTH-MAIL-01 : la requête ne fait que chercher le compte et mettre
+        // UNE tâche en file, compte connu ou non (identifiant ou null). Jeton,
+        // bcrypt, mail et SMTP sont dans le worker (SendPasswordResetEmailJob) ;
+        // la Timebox native égalise le reste du chemin.
+        $timebox->call(function () use ($request) {
+            try {
+                $user = Password::broker()->getUser(['email' => $request->input('email')]);
+
+                Bus::dispatch(new SendPasswordResetEmailJob($user?->getKey()));
+            } catch (\Throwable $e) {
+                // Échec d'infrastructure (lecture, insertion en file) : signalé
+                // côté serveur, même réponse publique (pas d'énumération).
+                report($e);
+            }
+        }, (int) config('auth.timebox_duration', 200000));
 
         return response()->json(['message' => self::LINK_REQUESTED]);
     }
