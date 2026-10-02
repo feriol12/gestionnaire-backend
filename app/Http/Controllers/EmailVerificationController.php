@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendVerificationEmailJob;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Timebox;
 
 /**
  * AUTH3-04 : vérification d'adresse email (mécanisme natif Laravel).
@@ -44,7 +47,7 @@ class EmailVerificationController extends Controller
         return $this->toFrontend('/login?email_verified=1');
     }
 
-    public function resend(Request $request): JsonResponse
+    public function resend(Request $request, Timebox $timebox): JsonResponse
     {
         $request->validate([
             'email' => 'required|string|email|max:255',
@@ -52,15 +55,18 @@ class EmailVerificationController extends Controller
 
         // Réponse identique que le compte existe, soit déjà vérifié ou non (pas
         // d'énumération) ; seul un compte existant non vérifié reçoit un email.
-        try {
-            $user = User::where('email', $request->input('email'))->first();
+        // PREAUTH-MAIL-01 : la requête met UNE tâche en file dans tous les cas
+        // (identifiant ou null) ; l'éligibilité, l'URL signée et le SMTP sont
+        // dans le worker (SendVerificationEmailJob). Timebox native.
+        $timebox->call(function () use ($request) {
+            try {
+                $user = User::where('email', $request->input('email'))->first();
 
-            if ($user && ! $user->hasVerifiedEmail()) {
-                $user->sendEmailVerificationNotification();
+                Bus::dispatch(new SendVerificationEmailJob($user?->getKey()));
+            } catch (\Throwable $e) {
+                report($e);
             }
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        }, (int) config('auth.timebox_duration', 200000));
 
         return response()->json(['message' => self::RESEND_REQUESTED]);
     }

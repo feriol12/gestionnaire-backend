@@ -201,6 +201,8 @@ class EmailVerificationTest extends TestCase
         $user = User::where('email', 'mail-down@example.test')->firstOrFail();
         Notification::fake();
         $this->resend('a', 'mail-down@example.test')->assertOk()->assertExactJson(['message' => EmailVerificationController::RESEND_REQUESTED]);
+        // PREAUTH-MAIL-01 : renvoi traité par la file database (vrai worker).
+        $this->artisan('queue:work', ['connection' => 'database', '--stop-when-empty' => true, '--sleep' => 0])->run();
         Notification::assertSentToTimes($user, VerifyEmail::class, 1);
     }
 
@@ -384,6 +386,10 @@ class EmailVerificationTest extends TestCase
             $response->assertOk()->assertExactJson(['message' => EmailVerificationController::RESEND_REQUESTED]);
             $this->assertSame($responses['unknown']->getContent(), $response->getContent(), $case);
         }
+
+        // PREAUTH-MAIL-01 : envoi par une tâche en file (connexion database), vraie
+        // exécution par un worker avant les assertions.
+        $this->artisan('queue:work', ['connection' => 'database', '--stop-when-empty' => true, '--sleep' => 0])->run();
 
         // Seul le compte existant non vérifié reçoit un email.
         Notification::assertSentToTimes($unverified, VerifyEmail::class, 1);
