@@ -20,10 +20,22 @@ use Illuminate\Support\ConfigurationUrlParser;
 
 const PG_SCHEMES = ['pgsql', 'postgres', 'postgresql'];
 
-// Champs de configuration que PostgresConnector (Laravel 10) écrit dans le DSN.
+// Champs de configuration que PostgresConnector (Laravel 10 et 13) écrit dans le DSN.
 const DSN_FIELDS = [
     'host', 'port', 'database', 'connect_via_database', 'connect_via_port', 'charset',
     'application_name', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert',
+];
+
+// Options keepalive ajoutées au DSN par Laravel 13 (addKeepaliveOptions, sans
+// échappement) : entiers uniquement.
+const KEEPALIVE_FIELDS = ['keepalives', 'keepalives_idle', 'keepalives_interval', 'keepalives_count'];
+
+// Paramètres que le DSN final peut contenir pour MONEVA (liste fermée) : pas de
+// hostaddr ni d'options serveur.
+const DSN_ALLOWED_PARAMS = [
+    'host', 'dbname', 'port', 'client_encoding', 'application_name', 'sslmode', 'sslcert',
+    'sslkey', 'sslrootcert', 'keepalives', 'keepalives_idle', 'keepalives_interval',
+    'keepalives_count',
 ];
 
 function guard_line(string $text): void
@@ -111,10 +123,16 @@ function effective_pgsql_config(array $cached): ?array
     }
 }
 
-// DSN sans ambiguïté : aucun séparateur ni quote dans les champs du DSN (addSslOptions
-// n'échappe rien), puis vérification sur le DSN réellement construit par Laravel.
+// DSN sans ambiguïté : aucun séparateur ni quote dans les champs du DSN (addSslOptions et
+// addKeepaliveOptions n'échappent rien), puis contrôle du DSN réellement construit par
+// Laravel.
 function dsn_is_unambiguous(array $config): bool
 {
+    // Redirection d'hôte au niveau libpq : jamais utilisée par MONEVA.
+    if (array_key_exists('hostaddr', $config)) {
+        return false;
+    }
+
     foreach (DSN_FIELDS as $field) {
         $value = $config[$field] ?? null;
 
@@ -123,9 +141,41 @@ function dsn_is_unambiguous(array $config): bool
         }
     }
 
+    foreach (KEEPALIVE_FIELDS as $field) {
+        $value = $config[$field] ?? null;
+
+        if ($value !== null && ! is_int($value) && ! (is_string($value) && preg_match('/^[0-9]+$/', $value))) {
+            return false;
+        }
+    }
+
     $dsn = (fn (array $c) => $this->getDsn($c))->call(new PostgresConnector, $config);
 
-    return substr_count($dsn, 'host=') === 1;
+    return dsn_params_are_safe($dsn);
+}
+
+// DSN final découpé aux frontières de paramètres (« ; », absent des valeurs filtrées) :
+// paramètres de la liste fermée seulement, aucun répété, donc exactement un host et aucun
+// hostaddr.
+function dsn_params_are_safe(string $dsn): bool
+{
+    if (! str_starts_with($dsn, 'pgsql:')) {
+        return false;
+    }
+
+    $seen = [];
+
+    foreach (explode(';', substr($dsn, strlen('pgsql:'))) as $param) {
+        $key = strtolower(trim((string) strstr($param, '=', true)));
+
+        if (! in_array($key, DSN_ALLOWED_PARAMS, true) || isset($seen[$key])) {
+            return false;
+        }
+
+        $seen[$key] = true;
+    }
+
+    return isset($seen['host']);
 }
 
 function guard_raw(): int
@@ -188,6 +238,14 @@ function guard_cached(): int
     // « write » remplace alors l'hôte : non utilisé par MONEVA, donc refusé.
     $readWrite = array_key_exists('read', $config) || array_key_exists('write', $config) ? 'UNSUPPORTED' : 'NONE';
 
+    // Laravel 13 : endpoint « direct » (utilisé pour migrations et DDL) et mode « pooled »,
+    // non utilisés par MONEVA : toute présence, même vide, est refusée.
+    $directPooled = array_key_exists('direct', $config) || array_key_exists('pooled', $config) ? 'UNSUPPORTED' : 'NONE';
+
+    // Laravel 13 : « server_options » ajoutées au DSN (options='-c …'), non utilisées par
+    // MONEVA : refusées plutôt que d'en valider la syntaxe.
+    $serverOptions = array_key_exists('server_options', $config) ? 'UNSUPPORTED' : 'NONE';
+
     // Plusieurs hôtes (tableau) : Laravel en choisit un au hasard, refusé.
     $hostClass = is_array($config['host'] ?? null) ? 'MULTIPLE' : host_class($config['host'] ?? null);
 
@@ -197,10 +255,13 @@ function guard_cached(): int
 
     guard_line("CACHED_EFFECTIVE_DRIVER={$driver}");
     guard_line("CACHED_READ_WRITE={$readWrite}");
+    guard_line("CACHED_DIRECT_POOLED={$directPooled}");
+    guard_line("CACHED_SERVER_OPTIONS={$serverOptions}");
     guard_line("CACHED_EFFECTIVE_HOST_CLASS={$hostClass}");
     guard_line("CACHED_DSN={$dsn}");
 
-    if ($default !== 'PGSQL' || $driver !== 'PGSQL' || $readWrite !== 'NONE' || $hostClass !== 'NEON' || $dsn !== 'UNAMBIGUOUS') {
+    if ($default !== 'PGSQL' || $driver !== 'PGSQL' || $readWrite !== 'NONE' || $directPooled !== 'NONE'
+        || $serverOptions !== 'NONE' || $hostClass !== 'NEON' || $dsn !== 'UNAMBIGUOUS') {
         return guard_blocked();
     }
 
