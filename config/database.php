@@ -65,7 +65,9 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DATABASE_URL'),
+            // Bascule Neon : NEON_DATABASE_URL (variable indépendante de l'ancienne
+            // liaison Render DATABASE_URL) est prioritaire ; vide ou absente -> DATABASE_URL.
+            'url' => env('NEON_DATABASE_URL') ?: env('DATABASE_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'forge'),
