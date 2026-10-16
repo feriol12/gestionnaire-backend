@@ -34,16 +34,19 @@ return [
     */
 
     'mailers' => [
+        // LWS-BE-05 : un seul modèle explicite (MAIL_SCHEME + hôte/port). Pas de
+        // MAIL_URL (fusionnée par le MailManager, elle écraserait ces valeurs)
+        // ni de clé « encryption » (ignorée par Laravel 13 / Symfony Mailer).
+        // Production LWS : smtps (TLS implicite) sur le port 465.
         'smtp' => [
             'transport' => 'smtp',
-            'url' => env('MAIL_URL'),
+            'scheme' => env('MAIL_SCHEME'),
             'host' => env('MAIL_HOST', 'smtp.mailgun.org'),
             'port' => env('MAIL_PORT', 587),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
-            'local_domain' => env('MAIL_EHLO_DOMAIN'),
+            'timeout' => env('MAIL_TIMEOUT', 20),
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
         'ses' => [
