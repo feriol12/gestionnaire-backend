@@ -82,6 +82,12 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         $this->routes(function () {
+            // LWS-BE-04 : sonde de disponibilité, hors des groupes « web » et
+            // « api » : ni session, ni cookie, ni CSRF, ni throttle, ni base de
+            // données. Seuls les middlewares globaux s'appliquent ; pas
+            // d'exception au mode maintenance (503 pendant « artisan down »).
+            Route::get('/up', fn () => response()->json(['status' => 'up']));
+
             Route::middleware('api')
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));

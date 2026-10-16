@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,8 +11,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
-
+// LWS-BE-04 : l'API n'expose aucune ressource à la racine (GET / → 404, sans
+// session ni cookie). La sonde de disponibilité est /up, enregistrée dans le
+// RouteServiceProvider hors des groupes « web » et « api ».

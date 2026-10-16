@@ -51,9 +51,10 @@ class SecurityHeadersTest extends TestCase
         $this->assertSecurityHeaders($response);
     }
 
-    public function test_web_root_carries_the_security_headers(): void
+    public function test_health_endpoint_carries_the_security_headers(): void
     {
-        $this->assertSecurityHeaders($this->get('/')->assertOk());
+        // LWS-BE-04 : la racine répond 404 ; /up est le point public stable en 200.
+        $this->assertSecurityHeaders($this->get('/up')->assertOk());
     }
 
     public function test_cors_preflight_and_actual_requests_are_unchanged(): void
