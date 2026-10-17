@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -121,6 +122,20 @@ return [
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,
+        ],
+
+        // LWS-BE-06C : événements structurés du worker unique (une ligne JSON
+        // par événement), hors de l'application. Pas de valeur par défaut :
+        // utilisé uniquement par App\Queue\SingleWorker\OpsLog après
+        // validation du chemin ; sinon repli d'une ligne sur STDERR.
+        'queue_ops' => [
+            'driver' => 'daily',
+            'path' => env('QUEUE_WORKER_LOG_PATH'),
+            'level' => 'info',
+            'days' => 14,
+            'permission' => 0600,
+            'locking' => true,
+            'formatter' => JsonFormatter::class,
         ],
 
         'emergency' => [
