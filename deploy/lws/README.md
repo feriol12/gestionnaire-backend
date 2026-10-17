@@ -25,3 +25,10 @@ ni `.git`. `index.php` charge l'application depuis `/home/fluxmoneva-api`
   utilise `base_path('public')` et lève une exception s'il n'existe pas.
 - `public/index.php` reste le point d'entrée local (développement, tests) ;
   il n'est pas servi par LWS.
+
+## Worker de file (LWS-BE-06C)
+
+Procédures du worker unique (chemins privés `/home/fluxmoneva-ops`, verrou,
+pause/drain/reprise, journal, contraintes de déploiement) :
+[QUEUE-WORKER-RUNBOOK.md](QUEUE-WORKER-RUNBOOK.md). L'activation de la file
+en production reste bloquée jusqu'à LWS-BE-06D et autorisation explicite.

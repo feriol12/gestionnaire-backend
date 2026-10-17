@@ -12,6 +12,14 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
+    <groups>
+        <exclude>
+            <!-- LWS-BE-06C I2 : deux processus artisan réels contre
+                 gestionnaire_test ; exécution explicite uniquement
+                 (option group de PHPUnit : process-integration). -->
+            <group>process-integration</group>
+        </exclude>
+    </groups>
     <source>
         <include>
             <directory>app</directory>
