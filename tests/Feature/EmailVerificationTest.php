@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Encryption\Encrypter;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -17,10 +18,10 @@ use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\PersonalAccessToken;
-use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 /*
@@ -164,6 +165,10 @@ class EmailVerificationTest extends TestCase
 
         $user = User::where('email', 'new-user@example.test')->firstOrFail();
         $this->assertNull($user->email_verified_at);
+        // REG-MAIL-ASYNC : rien n'est envoyé pendant la requête ; l'email part par
+        // la file database (vrai worker).
+        Notification::assertNothingSent();
+        $this->artisan('queue:work', ['connection' => 'database', '--stop-when-empty' => true, '--sleep' => 0])->run();
         Notification::assertSentToTimes($user, VerifyEmail::class, 1);
         Notification::assertCount(1);
 
@@ -172,11 +177,13 @@ class EmailVerificationTest extends TestCase
         $this->assertSame(0, PersonalAccessToken::count());
     }
 
-    public function test_a_verification_mail_failure_does_not_turn_a_created_account_into_an_error(): void
+    public function test_a_verification_queue_failure_does_not_turn_a_created_account_into_an_error(): void
     {
         Exceptions::fake();
-        // Transport SMTP injoignable : l'envoi échoue réellement.
-        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => '127.0.0.1', 'mail.mailers.smtp.port' => 1, 'mail.mailers.smtp.timeout' => 1]);
+        Notification::fake();
+        // REG-MAIL-ASYNC : la requête ne contacte plus SMTP ; l'échec possible est la
+        // mise en file (table jobs indisponible). Pas d'envoi de secours.
+        config(['queue.connections.database.table' => 'missing_jobs_table']);
 
         $this->csrf('a');
         $response = $this->browser('a', 'POST', '/api/register', [
@@ -184,13 +191,19 @@ class EmailVerificationTest extends TestCase
             'password' => self::PASSWORD, 'password_confirmation' => self::PASSWORD,
         ]);
 
-        // Contrat d'inscription inchangé : succès, aucun détail SMTP exposé.
+        // Contrat d'inscription inchangé : succès, aucun détail technique exposé.
         $response->assertOk()->assertJsonPath('email', 'mail-down@example.test');
-        $this->assertStringNotContainsStringIgnoringCase('smtp', $response->getContent());
-        $this->assertStringNotContainsStringIgnoringCase('connection', $response->getContent());
+        $this->assertStringNotContainsStringIgnoringCase('missing_jobs_table', $response->getContent());
+        $this->assertStringNotContainsStringIgnoringCase('sqlstate', $response->getContent());
         $this->assertDatabaseHas('users', ['email' => 'mail-down@example.test', 'email_verified_at' => null]);
-        // Échec signalé côté serveur uniquement.
-        Exceptions::assertReported(TransportException::class);
+        // Échec signalé côté serveur uniquement, sans email synchrone.
+        Exceptions::assertReported(QueryException::class);
+        Notification::assertNothingSent();
+
+        // File rétablie (le gestionnaire garde les connexions résolues en cache).
+        config(['queue.connections.database.table' => 'jobs']);
+        $this->app->forgetInstance('queue');
+        Queue::clearResolvedInstance('queue');
 
         // Le compte existe : on ne doit pas réessayer l'inscription mais redemander l'email.
         $this->browser('a', 'POST', '/api/register', [
@@ -199,7 +212,6 @@ class EmailVerificationTest extends TestCase
         ])->assertStatus(422);
 
         $user = User::where('email', 'mail-down@example.test')->firstOrFail();
-        Notification::fake();
         $this->resend('a', 'mail-down@example.test')->assertOk()->assertExactJson(['message' => EmailVerificationController::RESEND_REQUESTED]);
         // PREAUTH-MAIL-01 : renvoi traité par la file database (vrai worker).
         $this->artisan('queue:work', ['connection' => 'database', '--stop-when-empty' => true, '--sleep' => 0])->run();

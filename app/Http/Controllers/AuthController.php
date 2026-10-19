@@ -28,10 +28,12 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // AUTH3-04 : email de vérification (listener natif SendEmailVerificationNotification).
-        // Le compte est déjà créé : un échec d'envoi est signalé côté serveur mais
-        // ne transforme pas l'inscription en erreur (l'utilisateur peut redemander
-        // l'email ; un nouvel essai d'inscription échouerait sur « email déjà pris »).
+        // AUTH3-04 / REG-MAIL-ASYNC : Registered met l'email de vérification en file
+        // « database » (QueueEmailVerification → SendVerificationEmailJob) ; aucun
+        // SMTP dans la requête. Le compte est déjà créé : un échec de mise en file est
+        // signalé côté serveur mais ne transforme pas l'inscription en erreur (pas
+        // d'envoi de secours ; l'utilisateur peut redemander l'email ; un nouvel essai
+        // d'inscription échouerait sur « email déjà pris »).
         try {
             event(new Registered($user));
         } catch (\Throwable $e) {
