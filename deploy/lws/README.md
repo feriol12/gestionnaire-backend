@@ -31,6 +31,18 @@ dépendre de l'emplacement du fichier, de la requête, de l'environnement, de
 `DOCUMENT_ROOT` ni du répertoire courant. Si l'application privée change un
 jour d'emplacement, ce littéral unique est la seule ligne à modifier.
 
+### `.htaccess` propre à LWS (LWS-BE-08-F2)
+
+Le `.htaccess` de `public/` (Laravel d'origine) donnait un 500 LWS sur `/up`
+et `/api/user`, même sans la ligne `Options -MultiViews -Indexes`.
+`deploy/lws/api-webroot/.htaccess` reprend à l'identique la configuration
+validée sur `api-rehearsal.fluxmoneva.com` (`/up` → 200, `/api/user` → 401) :
+`RewriteBase /`, transmission des en-têtes `Authorization` et `X-XSRF-Token`,
+`index.php` servi tel quel, puis `RewriteRule . /index.php [L]`. Il n'a ni
+directive `Options` ni redirection des « / » finaux. Ne pas le modifier sans
+nouvelle validation sur LWS ; `public/.htaccess` reste celui de Laravel pour
+le développement local.
+
 ## Application privée
 
 - Garder le dossier `public/` du dépôt dans `/home/fluxmoneva-api/` : dompdf

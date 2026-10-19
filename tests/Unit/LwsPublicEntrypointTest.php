@@ -215,27 +215,38 @@ class LwsPublicEntrypointTest extends TestCase
 
     // ------------------------------------------------------------------ .htaccess
 
-    public function test_htaccess_keeps_every_laravel_front_controller_rule_in_order(): void
+    public function test_htaccess_is_exactly_the_configuration_validated_on_real_lws(): void
     {
-        $stock = $this->directives(file_get_contents(__DIR__.'/../../public/.htaccess'));
-        $lws = $this->directives(file_get_contents(self::WEBROOT_ARTIFACT.'/.htaccess'));
+        // LWS-BE-08-F2 : le .htaccess Laravel d'origine (Options -MultiViews
+        // -Indexes, redirection des « / » finaux, RewriteRule ^ index.php)
+        // donnait un 500 LWS sur /up et /api/user ; retirer seulement la ligne
+        // Options ne suffisait pas. Cette configuration, testée sur
+        // api-rehearsal.fluxmoneva.com, donne /up -> 200 et /api/user -> 401.
+        // Toute modification doit d'abord être revalidée sur LWS.
+        $this->assertSame([
+            '<IfModule mod_rewrite.c>',
+            'RewriteEngine On',
+            'RewriteBase /',
+            'RewriteCond %{HTTP:Authorization} .',
+            'RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]',
+            'RewriteCond %{HTTP:X-XSRF-Token} .',
+            'RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]',
+            'RewriteRule ^index\.php$ - [L]',
+            'RewriteCond %{REQUEST_FILENAME} !-f',
+            'RewriteCond %{REQUEST_FILENAME} !-d',
+            'RewriteRule . /index.php [L]',
+            '</IfModule>',
+        ], $this->directives(file_get_contents(self::WEBROOT_ARTIFACT.'/.htaccess')));
+    }
 
-        // Toutes les directives du .htaccess Laravel du dépôt, dans le même ordre.
-        $position = -1;
-        foreach ($stock as $directive) {
-            $found = array_search($directive, array_slice($lws, $position + 1, null, true), true);
-            $this->assertNotFalse($found, "missing or reordered: {$directive}");
-            $position = $found;
-        }
+    public function test_the_local_htaccess_keeps_the_stock_laravel_rules(): void
+    {
+        // public/.htaccess (développement local) n'est pas servi par LWS et
+        // garde les règles Laravel d'origine.
+        $local = $this->directives(file_get_contents(__DIR__.'/../../public/.htaccess'));
 
-        $this->assertContains('Options -MultiViews -Indexes', $lws);
-        $this->assertContains('RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]', $lws);
-        $this->assertContains('RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]', $lws);
-        $this->assertSame(
-            ['RewriteCond %{REQUEST_FILENAME} !-d', 'RewriteCond %{REQUEST_FILENAME} !-f', 'RewriteRule ^ index.php [L]'],
-            array_slice($lws, -4, 3),
-            'front controller is the last rule block'
-        );
+        $this->assertContains('Options -MultiViews -Indexes', $local);
+        $this->assertContains('RewriteRule ^ index.php [L]', $local);
     }
 
     public function test_htaccess_adds_no_php_handler_or_permissive_directives(): void
