@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
  */
 class EnsureEmailIsVerified
 {
-    public const MESSAGE = 'Veuillez vérifier votre adresse email pour accéder à MONEVA.';
+    public const MESSAGE = 'Veuillez vérifier votre adresse email pour accéder à FluxMoneva.';
 
     public function handle(Request $request, Closure $next)
     {
