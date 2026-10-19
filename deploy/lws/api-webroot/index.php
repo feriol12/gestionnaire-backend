@@ -14,17 +14,20 @@ use Illuminate\Http\Request;
 | racine web (403) : ce fichier est donc une vraie copie de public/index.php
 | dont seuls les chemins changent ; le cycle de la requête est identique.
 |
-| /home/htdocs/api.fluxmoneva.com --dirname(…, 2)--> /home
-| /home + /fluxmoneva-api          --------------> racine Laravel privée
+| LWS-BE-08-F1 : la racine Laravel privée est un chemin absolu fixe, invariant
+| de l'infrastructure LWS. Elle n'est plus déduite de __DIR__ : le PHP HTTP de
+| LWS voit /home/htdocs sous son nom canonique /htdocs, si bien que
+| dirname(__DIR__, 2) vaut « / » et non « /home » (racine « //fluxmoneva-api »
+| inexistante, observée en répétition réelle).
 |
-| Le chemin dépend uniquement de l'emplacement de ce fichier sur le disque,
-| jamais de la requête HTTP ni d'une variable d'environnement.
+| Le chemin ne dépend ni de la requête HTTP, ni d'une variable
+| d'environnement, ni de DOCUMENT_ROOT, ni du répertoire courant.
 |
 */
 
 define('LARAVEL_START', microtime(true));
 
-$laravelRoot = dirname(__DIR__, 2).'/fluxmoneva-api';
+$laravelRoot = '/home/fluxmoneva-api';
 
 // Mode maintenance (php artisan down) : avant les dépendances de démarrage.
 if (file_exists($maintenance = $laravelRoot.'/storage/framework/maintenance.php')) {

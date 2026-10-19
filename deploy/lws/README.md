@@ -16,8 +16,20 @@ Deux dossiers physiques distincts, sans lien symbolique (LWS renvoie 403) :
 
 Rien d'autre : ni `.env`, ni `vendor/`, ni `storage/`, ni `config/`, ni
 `routes/`, ni `database/`, ni `app/`, ni fichiers Composer, ni `artisan`,
-ni `.git`. `index.php` charge l'application depuis `/home/fluxmoneva-api`
-(chemin déduit de son propre emplacement : `dirname(__DIR__, 2)`).
+ni `.git`. `index.php` charge l'application depuis `/home/fluxmoneva-api`,
+écrit en chemin absolu fixe (`$laravelRoot = '/home/fluxmoneva-api';`).
+
+### Pourquoi un chemin absolu (LWS-BE-08-F1)
+
+Sur LWS, `/home/htdocs` est exposé au PHP HTTP sous son nom canonique
+`/htdocs` : le `__DIR__` de `index.php` vaut `/htdocs/api.fluxmoneva.com`,
+pas `/home/htdocs/api.fluxmoneva.com`. L'ancienne déduction
+`dirname(__DIR__, 2).'/fluxmoneva-api'` donnait donc `//fluxmoneva-api`
+(inexistant) et chaque requête finissait en 500. `/home` reste lisible depuis
+le PHP HTTP : la racine privée est ancrée sur le chemin LWS approuvé, sans
+dépendre de l'emplacement du fichier, de la requête, de l'environnement, de
+`DOCUMENT_ROOT` ni du répertoire courant. Si l'application privée change un
+jour d'emplacement, ce littéral unique est la seule ligne à modifier.
 
 ## Application privée
 
