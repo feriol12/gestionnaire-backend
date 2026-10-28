@@ -1,6 +1,6 @@
 $ErrorActionPreference='Stop'
 $checkoutRoot=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-if ($checkoutRoot -notlike '*\development\FM-ADMIN-DEV-07') { throw 'Unexpected development checkout; review paths before adapting this runner.' }
+if ($checkoutRoot -notlike '*\development\FM-ADMIN-DEV-07' -and $checkoutRoot -notlike '*\development\FM-ADMIN-MFA-12') { throw 'Unexpected development checkout; review paths before adapting this runner.' }
 Set-Location -LiteralPath $checkoutRoot
 $phpExe='C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe'
 $options=@('-n','-d','extension_dir=C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\ext','-d','extension=mbstring','-d','extension=openssl','-d','extension=fileinfo','-d','extension=pdo_sqlite', '-d',"sys_temp_dir=$checkoutRoot\storage\app\admin-harden-09\tmp")
