@@ -74,10 +74,14 @@ return [
     |
     */
 
+    // Sanctum 4 key name (was verify_csrf_token). The app-level class is kept
+    // on purpose: it extends the framework's PreventRequestForgery (Laravel 13;
+    // VerifyCsrfToken/ValidateCsrfToken are deprecated aliases of it) and keeps
+    // the api/* exemption for stateful (first-party origin) requests.
     'middleware' => [
         'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
         'encrypt_cookies' => App\Http\Middleware\EncryptCookies::class,
-        'verify_csrf_token' => App\Http\Middleware\VerifyCsrfToken::class,
+        'validate_csrf_token' => App\Http\Middleware\PreventRequestForgery::class,
     ],
 
 ];

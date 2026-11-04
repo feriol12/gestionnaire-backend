@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'FluxMoneva'),
 
     /*
     |--------------------------------------------------------------------------
@@ -58,6 +58,11 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     'asset_url' => env('ASSET_URL'),
+
+    // AUTH3-03 : origine du SPA (première entrée de FRONTEND_URL, qui peut en
+    // lister plusieurs pour CORS) ; sert à construire le lien de
+    // réinitialisation du mot de passe envoyé par email.
+    'frontend_url' => rtrim(explode(',', (string) env('FRONTEND_URL', 'http://localhost:5173'))[0], '/'),
 
     /*
     |--------------------------------------------------------------------------
@@ -164,6 +169,7 @@ return [
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
+        App\Providers\AdminFoundationServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,

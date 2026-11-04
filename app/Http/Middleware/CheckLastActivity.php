@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class CheckLastActivity
 {
@@ -27,11 +29,24 @@ class CheckLastActivity
         }
 
         // Vérifier l'inactivité (24 heures)
-        $inactiveMinutes = now()->diffInMinutes($lastActivity);
+        // Carbon 3 : diffInMinutes() est signé et fractionnaire (now() vs une
+        // date passée => valeur négative). On conserve la sémantique Carbon 2 :
+        // minutes entières d'inactivité, en valeur absolue.
+        $inactiveMinutes = (int) now()->diffInMinutes($lastActivity, true);
 
         if ($inactiveMinutes > 1440) { // 1440 minutes = 24 heures
-            // Révoquer le token actuel
-            $user->currentAccessToken()->delete();
+            // Client par jeton personnel : révoquer le token actuel.
+            $token = $user->currentAccessToken();
+            if ($token instanceof PersonalAccessToken) {
+                $token->delete();
+            }
+
+            // Navigateur (AUTH3-01, session Sanctum) : fermer la session.
+            if ($request->hasSession()) {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
 
             return response()->json([
                 'message' => 'Session expirée après ' . $inactiveMinutes . ' minutes d\'inactivité'

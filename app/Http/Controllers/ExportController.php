@@ -37,7 +37,7 @@ class ExportController extends Controller
                 </style>
             </head>
             <body>
-                <h2>Dépenses - ' . $period . '</h2>
+                <h2>Dépenses - ' . e($period) . '</h2>
                 <p>Export du ' . Carbon::now()->format('d/m/Y H:i') . '</p>
                 <table>
                     <thead>
@@ -45,12 +45,14 @@ class ExportController extends Controller
                     </thead>
                     <tbody>';
 
+            // SEC-005 : toute valeur texte issue de la requête ou de la base est
+            // échappée avant d'être injectée dans le HTML rendu par DomPDF.
             foreach ($expenses as $e) {
                 $html .= '
                     <tr>
-                        <td>' . $e->date . '</td>
-                        <td>' . $e->description . '</td>
-                        <td>' . $e->category . '</td>
+                        <td>' . e($e->date) . '</td>
+                        <td>' . e($e->description) . '</td>
+                        <td>' . e($e->category) . '</td>
                         <td style="text-align:right">' . number_format($e->amount, 0, ',', ' ') . ' FCFA</td>
                     </tr>';
             }
@@ -69,12 +71,14 @@ class ExportController extends Controller
 
             $pdf = Pdf::loadHTML($html);
             return $pdf->download("depenses_{$period}.pdf");
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // SEC-002 : le détail de l'erreur reste côté serveur (logs),
+            // jamais dans la réponse HTTP.
+            report($e);
+
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
+                'error' => 'Impossible de générer le PDF des dépenses.',
             ], 500);
         }
     }

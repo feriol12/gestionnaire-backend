@@ -31,7 +31,9 @@ return [
     |
     */
 
-    'lifetime' => env('SESSION_LIFETIME', 120),
+    // AUTH3-01 : la session navigateur porte l'authentification ; aligné sur
+    // la règle métier des 24 h d'inactivité (activity.check).
+    'lifetime' => env('SESSION_LIFETIME', 1440),
 
     'expire_on_close' => false,
 

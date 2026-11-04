@@ -58,6 +58,10 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // LWS-BE-02 : fuseau de session fixé à UTC (SET time_zone='+00:00' à
+            // chaque connexion), comme app.timezone, au lieu du SYSTEM du serveur
+            // (CEST chez LWS). Décalage numérique : pas besoin des tables de fuseaux.
+            'timezone' => '+00:00',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

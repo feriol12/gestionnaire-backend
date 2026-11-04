@@ -1,5 +1,7 @@
 .git
 .env
+.env.testing
+.env.testing.local
 node_modules
 vendor
 storage/logs/*
