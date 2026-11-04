@@ -41,7 +41,7 @@ Route::post('/email/verification-notification', [EmailVerificationController::cl
 // AUTH3-01 (A3-F1) : et SANS le limiteur générique « api » (60/min) : un budget de
 // requêtes épuisé ne doit jamais empêcher la fermeture de la session. Session,
 // CSRF (Sanctum stateful) et auth:sanctum restent appliqués.
-Route::middleware('auth:sanctum')
+Route::middleware(['auth:sanctum', 'client.identity'])
     ->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':api')
     ->post('/logout', [AuthController::class, 'logout']);
 // Route::post('/logout', [AuthController::class, 'logout']);
@@ -51,7 +51,7 @@ Route::middleware('auth:sanctum')
 // AUTH3-04 : toutes les ressources métier exigent une adresse email vérifiée
 // (« verified » après activity.check). /user et logout restent accessibles à
 // une session non vérifiée (antérieure à AUTH3-04) pour l'orienter / la fermer.
-Route::middleware(['auth:sanctum', 'activity.check', 'verified'])->group(function () {
+Route::middleware(['auth:sanctum', 'client.identity', 'activity.check', 'verified'])->group(function () {
     Route::get('/expenses', [ExpenseController::class, 'index']);
     Route::get('/expenses/summary', [ExpenseController::class, 'summary']);
     Route::post('/expenses', [ExpenseController::class, 'store']);
@@ -80,10 +80,10 @@ Route::middleware(['auth:sanctum', 'activity.check', 'verified'])->group(functio
 // AUTH3-05 : changement de mot de passe (sécurité du compte, pas une donnée
 // métier : pas de « verified », une session non vérifiée peut protéger son
 // compte). Session + CSRF (pile stateful), inactivité, limiteur dédié.
-Route::middleware(['auth:sanctum', 'activity.check', 'throttle:password-change'])
+Route::middleware(['auth:sanctum', 'client.identity', 'activity.check', 'throttle:password-change'])
     ->put('/user/password', [PasswordController::class, 'update']);
 
 //User  protegé par sanctum + contrôle d'inactivité (SEC-009)
-Route::middleware(['auth:sanctum', 'activity.check'])->get('/user', function (Request $request) {
+Route::middleware(['auth:sanctum', 'client.identity', 'activity.check'])->get('/user', function (Request $request) {
     return $request->user();
 });
