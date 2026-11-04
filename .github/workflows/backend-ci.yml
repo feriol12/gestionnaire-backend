@@ -47,6 +47,7 @@ jobs:
       CACHE_DRIVER: array
       CACHE_STORE: array
       SESSION_DRIVER: array
+      SESSION_COOKIE: laravel_session
       QUEUE_CONNECTION: sync
       MAIL_MAILER: array
 
