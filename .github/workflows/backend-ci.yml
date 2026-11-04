@@ -1,0 +1,77 @@
+name: Backend Laravel CI
+
+on:
+  pull_request:
+    branches:
+      - integration/security-auth-v3
+      - main
+  push:
+    branches:
+      - ci/backend-laravel-tests
+
+permissions:
+  contents: read
+
+jobs:
+  laravel-tests:
+    name: PHPUnit (PHP 8.3 / MariaDB 10.11)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: gestionnaire_test
+          MARIADB_USER: fm_ci
+          MARIADB_PASSWORD: ci_only_password
+          MARIADB_ROOT_PASSWORD: ci_only_root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: gestionnaire_test
+      DB_USERNAME: fm_ci
+      DB_PASSWORD: ci_only_password
+      DATABASE_URL: ''
+      CACHE_DRIVER: array
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      SESSION_COOKIE: laravel_session
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+
+    steps:
+      - name: Check out the proposed changes
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Configure PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, ctype, curl, dom, fileinfo, gd, intl, mbstring, pdo_mysql, xml, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Install PHP dependencies from composer.lock
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Generate disposable application key
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Run PHPUnit suites with the test DB guard
+        run: php artisan test --no-ansi
