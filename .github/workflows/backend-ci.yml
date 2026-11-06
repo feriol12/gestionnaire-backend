@@ -7,7 +7,8 @@ on:
       - main
   push:
     branches:
-      - ci/backend-laravel-tests
+      - integration/security-auth-v3
+      - main
 
 permissions:
   contents: read
