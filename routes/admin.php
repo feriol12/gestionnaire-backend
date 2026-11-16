@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAuthController as Controller;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Middleware;
 use Illuminate\Support\Facades\Route;
 
@@ -23,5 +24,8 @@ Route::prefix('api/admin')->middleware([
         Route::get('session', [Controller::class, 'session']);
         Route::post('reauthenticate', [Controller::class, 'reauthenticate']);
         Route::post('factor/change', [Controller::class, 'change']);
+        // BE-06 — read-only user directory. No mutation, no finance data.
+        Route::get('users', [AdminUserController::class, 'index']);
+        Route::get('users/{id}', [AdminUserController::class, 'show'])->whereNumber('id');
     });
 });
