@@ -34,7 +34,7 @@ Le code BE-03 est *fail-closed* : la barrière `client.active` et le login refus
 | Risque | Effet | Mesure |
 |---|---|---|
 | Code déployé avant la migration | 401 pour tous les clients | Ordre du §2 ; vérifier le §2.3 avant de déployer |
-| Ajout de la contrainte CHECK sur `users` | MySQL 8.4 : colonnes en `ALGORITHM=INSTANT`, mais **la contrainte CHECK exige `ALGORITHM=COPY`**, soit une reconstruction de `users` qui bloque ses écritures (logins, `last_activity`) le temps de la copie. MariaDB 10.11 : voir le rapport de qualification (mesure) | Fenêtre de maintenance ; mesurer la durée sur une copie de taille réelle |
+| Ajout de la contrainte CHECK sur `users` | MySQL 8.4 : colonnes en `ALGORITHM=INSTANT`, mais **la contrainte CHECK exige `ALGORITHM=COPY`**, soit une reconstruction de `users` qui bloque ses écritures (logins, `last_activity`) le temps de la copie. **MariaDB 10.11.19 : même mesure** (colonnes `INSTANT` ; contrainte CHECK refusée en `INSTANT`, `INPLACE` et `NOCOPY`, donc `COPY`) | Fenêtre de maintenance ; mesurer la durée sur une copie de taille réelle |
 | Sessions navigateur existantes | Aucune n'a de version liée : **toutes sont refusées une fois** au premier appel après déploiement (401), d'où un nouveau login obligatoire | À annoncer aux utilisateurs ; effet unique |
 | Cookies « remember » | Toujours refusés (pas de version liée) ; l'application n'en émet pas | Aucune |
 | Driver de session `database` | Pendant une transition, la purge `DELETE … WHERE user_id` pose des verrous de plage sur `sessions.user_id` : une création ou écriture de session concurrente peut attendre le commit (quelques millisecondes en temps normal) | Transitions rares et courtes ; observé et borné par le banc (T10d) |

@@ -1,0 +1,983 @@
+{
+    "engine": {
+        "version": "8.4.3",
+        "port": 33390,
+        "database": "fm_admin_be03_test"
+    },
+    "image_digest": null,
+    "git_head": "7e9fc4613d291640315f69fce80314a649055c44",
+    "git_dirty": false,
+    "php": "8.3.30",
+    "started_at": "2026-11-22T13:46:34+00:00",
+    "finished_at": "2026-11-22T13:47:11+00:00",
+    "checks": 161,
+    "failed": 0,
+    "results": [
+        {
+            "name": "T17 pre-BE-03 schema has no status column",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T17 existing clients migrated active\/v1",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T17 finances untouched by migration",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T17 CHECK constraint rejects unknown status",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T17 down() removes BE-03 schema",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T17 rollback keeps finances",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T17 re-migration idempotent",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "setup client A file login",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "setup client A database login",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "setup A file session works",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "setup A database session works",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "setup A PAT works",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "setup A has a database session row",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T01 anonymous admin refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T01 pre-MFA challenge session refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T01 bearer refused on admin",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T01 foreign origin refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T01 missing CSRF refused (419)",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T01 nothing changed",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T02 valid grant but MFA proof older than 300 s refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T02 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T02 reauth older than 300 s refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T02 nothing changed",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 empty reason ⇒ 422",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 empty reason ⇒ no echo of submitted values",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 reason > 2000 ⇒ 422",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 reason > 2000 ⇒ no echo of submitted values",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 missing confirm ⇒ 422",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 missing confirm ⇒ no echo of submitted values",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 confirm other case ⇒ 422",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 confirm other case ⇒ no echo of submitted values",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 confirm other account ⇒ 422",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 confirm other account ⇒ no echo of submitted values",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 unknown user ⇒ 404 USER_NOT_FOUND",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 non-numeric id ⇒ 404",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T03 nothing changed",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 suspension 240 s after reauth ⇒ 200",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 response keys exactly",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 response values",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 no-store",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 reason never in response",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 durable state",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 PATs revoked, database sessions purged",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 audit row",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 outbox intention",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 outbox carries no reason nor email",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T04 finances preserved",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T06 existing file session refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T06 existing database session refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T06 file session closed after refusal",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T07 revoked PAT refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T07 PAT write refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T06\/T07 no financial write",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T05 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T05 re-suspension ⇒ 409 ALREADY_SUSPENDED",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T05 no business effect",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T05 refusal traced without reason",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T05 reactivating an active account ⇒ 409 ALREADY_ACTIVE",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T05 active account untouched",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "A1 suspended login ⇒ generic 401",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "A1 no session after refused login",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T09 forgot-password neutral",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T09 no reset token issued for suspended",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T09 valid token on suspended ⇒ same as invalid link",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T09 password unchanged",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T09 no access after reset attempt",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 reactivation ⇒ 200 active",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 version 3, suspension metadata cleared",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 old file session still invalid",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 old database session still invalid",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 old PAT still invalid",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 fresh login works",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 fresh session works",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T08 reactivation outbox",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "BE-06 detail now carries BE-03 fields",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "BE-06 list carries BE-03 fields",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-02 list rows never carry suspended_at (detail only)",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "S17\/T14 detail: no finance, reason or suspended_by",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "S17\/T14 list: no finance, reason or suspended_by",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T14 admin and client share id 1",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T14 admin cookie cannot read client finances",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T14 client session cannot reach admin mutation",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T14 B untouched",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 reauthenticate (admin_audit_events)",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 admin_audit_events failure ⇒ 500 TRANSITION_FAILED",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 admin_audit_events failure ⇒ no SQL leaked",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 admin_audit_events failure ⇒ full rollback",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 reauthenticate (notification_outbox)",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 notification_outbox failure ⇒ 500 TRANSITION_FAILED",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 notification_outbox failure ⇒ no SQL leaked",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 notification_outbox failure ⇒ full rollback",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T12 B PAT still works",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10 B login",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a in-flight write admitted first commits",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a suspension waited for the write lock",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a suspension then succeeds",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a suspension started while the write held the lock",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a write committed before the suspension completed",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a exactly one new expense",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a next write refused",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10a no further expense",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b reactivate B",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b B login",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b suspension holding the lock succeeds",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b concurrent write waited for the commit",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b concurrent write refused after commit",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10b no expense written",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10c reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10c reactivate B",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10c reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10c suspension succeeds",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10c racing login waited and got the generic 401",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10c racing login left no usable session",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10d reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10d reactivate B",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10d reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10d suspension succeeds",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10d racing database-session login refused with the generic 401",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T10d no usable database session",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 reauthenticate second admin session",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 simultaneous suspensions ⇒ one 200, one 409",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 one transition, one event",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 reauthenticate second",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 reactivate vs suspend serialize coherently",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 outbox matches successful transitions",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T11 audit matches successful transitions",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T13 every intention durable and pending",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T13 one intention per successful transition",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T13 intentions unique (dedup key)",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T15 cached routes: suspended login still generic 401",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T15 reauthenticate (cached routes)",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T15 cached routes: suspend works",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "T15 cached routes: suspended D refused at login",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 401 anonymous carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 401 bearer carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 403 origin carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 419 csrf carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 403 recent auth carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 422 validation carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 404 unknown user carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 404 no route carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 405 wrong verb carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-04 409 redundant carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-03 reauthenticate",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-03 ten requests admitted (422), then throttled",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-03 429 carries no-store, private",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-03 throttled requests had no effect",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "F-03 limiter window resets",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "S16 reason never logged",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "S20 no user deleted",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "S20 finances: only the admitted concurrent write was added",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        },
+        {
+            "name": "Q8 audit append-only: every row still present",
+            "pass": true,
+            "actual": null,
+            "expected": null
+        }
+    ]
+}
