@@ -107,7 +107,7 @@ class AuthController extends Controller
             return null;
         }
 
-        // 🔥 AJOUTEZ CETTE LIGNE - Initialiser last_activity
+        // Initialise last_activity (SEC-009) sous le même verrou.
         $user->last_activity = now();
         $user->save();
 
