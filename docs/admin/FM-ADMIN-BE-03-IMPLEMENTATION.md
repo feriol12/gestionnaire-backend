@@ -26,7 +26,7 @@ La transition se fait en une seule transaction, avec des verrous pris dans un or
 4. CAS sur statut et version, qui doit toucher exactement 1 ligne.
 5. Révocation :
    - suppression des PAT filtrée sur `tokenable_type` **et** `tokenable_id` ;
-   - purge des lignes de la table `sessions` (complément) ;
+   - purge physique complémentaire des sessions client (`ClientSessionPurger`) : uniquement si `SESSION_DRIVER=database` ; dans la transaction sur la connexion par défaut, après commit en best-effort si `SESSION_CONNECTION` est distincte (F-06) ;
    - rotation du `remember_token`.
 6. Écriture de l'audit.
 7. Insertion de l'intention dans l'outbox.
@@ -54,12 +54,15 @@ Tout échec entraîne un rollback complet. Aucune table financière n'est lue ni
 | Preuve MFA de plus de 300 s | `403 ADMIN_RECENT_AUTH_REQUIRED` (code existant de BE-02, désormais factorisé) |
 | CSRF | `419` |
 | `reason` ou `confirm_email` invalide | `422 {message, errors}` sans écho des valeurs |
-| Cible inconnue | `404 USER_NOT_FOUND` (aligné sur BE-06) |
+| Cible inconnue | `404 {message, code: USER_NOT_FOUND}` (BE-06 renvoie `{code}` seul : écart soumis à arbitrage GOV-05, voir la réponse à la revue) |
 | Transition redondante | `409 ALREADY_SUSPENDED` / `409 ALREADY_ACTIVE` |
 | CAS perdu | `409 STATE_CONFLICT` |
+| Plus de 10 transitions par minute et par IP (après le grant MFA) | `429` (limiteur `admin-user-transition`, F-03) |
 | Échec d'audit, d'outbox ou SQL | `500 TRANSITION_FAILED`, sans SQL ni motif ; le journal serveur est expurgé |
 | Client suspendu encore authentifié | `403 CLIENT_SUSPENDED` |
 | Session ou PAT révoqué | `401` |
+
+Toute réponse sous `/api/admin/*`, erreurs comprises (route absente, mauvais verbe, 429), porte `Cache-Control: no-store, private` (F-04). Dans BE-06, `suspended_at` n'apparaît que dans la fiche, jamais dans la liste (GOV-05 V1.1 §3, F-02).
 
 Ces codes nommés suivent le contrat BE-03 §5.D et GOV-05 (`STATE_CONFLICT`, `CLIENT_SUSPENDED`). L'OpenAPI 0.1.0 n'est pas encore ratifié et pourra les renommer.
 
@@ -77,5 +80,6 @@ Ces codes nommés suivent le contrat BE-03 §5.D et GOV-05 (`STATE_CONFLICT`, `C
 
 - **T13 :** l'envoi, les retries et la déduplication SMTP relèvent de BE-05. BE-03 prouve seulement que l'intention est durable, unique et neutre.
 - **Activation :** le driver de session LWS réel, MariaDB sur la cible, OPS-01/02/03 et la procédure GOV-06 restent à qualifier avant toute activation.
+- **Séquencement et rollback :** voir `FM-ADMIN-BE-03-RUNBOOK.md` (migrations obligatoirement avant le code).
 - **Écart BE-06 / GOV-05 :** BE-06 expose `nom` et `q`, alors que GOV-05 prévoit `name` et `search`. Cet écart est préexistant et hors périmètre BE-03.
 - **Déploiement :** toutes les sessions navigateur antérieures au déploiement n'ont pas de version liée et seront refusées une fois (nouveau login requis). La migration doit précéder le code.
