@@ -259,6 +259,16 @@ foreach ($cases as $label => $payload) {
 }
 $r = be03Req('admin', 'POST', '/api/admin/users/999999/suspend', $adm, body('nobody@example.test'));
 check('T03 unknown user ⇒ 404 USER_NOT_FOUND', [$r['status'], $r['data']['code'] ?? null], [404, 'USER_NOT_FOUND']);
+// F-05 / addenda GOV-05 22/11/2026 : erreurs admin = {message, code}.
+check('F-05 BE-03 404 body is exactly {message, code}', [array_keys($r['data']), is_string($r['data']['message'] ?? null) && $r['data']['message'] !== ''], [['message', 'code'], true]);
+check('F-05 BE-03 404 does not echo the submitted e-mail', str_contains($r['raw'], 'nobody@example.test'), false);
+$r6 = be03Req('admin', 'GET', '/api/admin/users/999999', $adm);
+check('F-05 BE-06 404 body', [$r6['status'], $r6['data']], [404, ['message' => 'Utilisateur introuvable', 'code' => 'USER_NOT_FOUND']]);
+check('F-05 BE-06 404 no-store', $r6['headers']->get('Cache-Control'), 'no-store, private');
+$anon6 = [];
+be03Req('admin', 'GET', '/api/admin/csrf', $anon6);
+$r6a = be03Req('admin', 'GET', '/api/admin/users/999999', $anon6);
+check('F-05 BE-06 detail still requires the admin MFA grant (no 404 oracle)', [$r6a['status'], array_key_exists('code', $r6a['data']) && $r6a['data']['code'] === 'USER_NOT_FOUND'], [401, false]);
 check('T03 non-numeric id ⇒ 404', be03Req('admin', 'POST', '/api/admin/users/abc/suspend', $adm, body('client.a@example.test'))['status'], 404);
 check('T03 nothing changed', [state($A)['status'], state($A)['version']], ['active', 1]);
 

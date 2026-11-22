@@ -281,6 +281,9 @@ check('detail payload clean', sensitiveLeak($r['data']), null);
 $r = req('GET', '/api/admin/users/999999', $jar);
 check('unknown id is 404', $r['status'], 404);
 check('unknown id code', $r['data']['code'] ?? null, 'USER_NOT_FOUND');
+// F-05 / addenda GOV-05 22/11/2026 : corps exact {message, code}, rien d'autre
+// (ni identifiant demandé écho, ni donnée de compte).
+check('unknown id exact error body', $r['data'], ['message' => 'Utilisateur introuvable', 'code' => 'USER_NOT_FOUND']);
 // R2: the 404 answer keeps the admin anti-cache convention. The csrf
 // refresh is only delivered by respond() on 200 payloads (validated BE-06
 // convention); the short-circuit refusal deliberately omits it.
