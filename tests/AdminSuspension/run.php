@@ -19,6 +19,16 @@ if (($argv[1] ?? '') !== 'run') {
     exit(0);
 }
 
+// Toute sortie avant le bilan final (garde d'isolation, exception rendue par le
+// gestionnaire Laravel…) doit produire un code non nul, jamais un faux succès.
+$GLOBALS['be03Completed'] = false;
+register_shutdown_function(function () {
+    if (! $GLOBALS['be03Completed']) {
+        echo "\nINCOMPLETE — harness aborted before its final summary.\n";
+        exit(2);
+    }
+});
+
 require __DIR__.'/lib.php';
 
 use App\Services\Admin\AdminMfa;
@@ -465,4 +475,5 @@ $evidence = ['engine' => $iso, 'checks' => count($results), 'failed' => $failed,
 $name = $runtime.'/evidence-'.preg_replace('/[^a-z0-9.]+/i', '-', $iso['version']).'.json';
 file_put_contents($name, json_encode($evidence, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 echo "\n".(count($results) - $failed).'/'.count($results)." checks passed — evidence: $name\n";
+$GLOBALS['be03Completed'] = true;
 exit($failed ? 1 : 0);

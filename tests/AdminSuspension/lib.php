@@ -125,10 +125,21 @@ function be03Console(): Illuminate\Foundation\Application
 /** Vérifie que la connexion vise l'instance jetable attendue, sinon arrêt. */
 function be03AssertIsolated(): array
 {
-    $server = DB::selectOne('SELECT @@version AS version, @@port AS port, @@datadir AS datadir');
+    $server = DB::selectOne('SELECT @@version AS version, @@port AS port, @@datadir AS datadir, @@hostname AS hostname');
     $norm = fn (string $p) => strtolower(rtrim(str_replace('\\', '/', $p), '/'));
-    $expected = $norm((string) realpath(be03Env('BE03_DB_EXPECTED_DATADIR')));
-    if ($expected === '' || (int) $server->port !== (int) be03Env('BE03_DB_PORT') || $norm($server->datadir) !== $expected
+    // Instance locale : datadir résolu sur disque. Conteneur : datadir interne
+    // littéral, port interne (BE03_DB_EXPECTED_SERVER_PORT) ET nom d'hôte
+    // unique du conteneur jetable (BE03_DB_EXPECTED_HOSTNAME) obligatoires.
+    $rawDir = be03Env('BE03_DB_EXPECTED_DATADIR');
+    $local = realpath($rawDir);
+    $hostname = getenv('BE03_DB_EXPECTED_HOSTNAME');
+    if ($local === false && ! is_string($hostname)) {
+        throw new RuntimeException('Non-local datadir requires BE03_DB_EXPECTED_HOSTNAME.');
+    }
+    $expected = $norm($local === false ? $rawDir : $local);
+    $port = (int) (getenv('BE03_DB_EXPECTED_SERVER_PORT') ?: be03Env('BE03_DB_PORT'));
+    if ($expected === '' || (int) $server->port !== $port || $norm($server->datadir) !== $expected
+        || (is_string($hostname) && $server->hostname !== $hostname)
         || DB::connection()->getDatabaseName() !== be03Env('BE03_DB_DATABASE')) {
         throw new RuntimeException('Wrong SQL instance: refusing to touch it.');
     }
