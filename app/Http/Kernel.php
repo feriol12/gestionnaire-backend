@@ -76,5 +76,9 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         'activity.check' => \App\Http\Middleware\CheckLastActivity::class,
+        // BE-03 : barrière statut/version (avant activity.check) et
+        // sérialisation des écritures clientes avec les transitions admin.
+        'client.active' => \App\Http\Middleware\EnsureClientAccountActive::class,
+        'client.write' => \App\Http\Middleware\SerializeClientWrites::class,
     ];
 }

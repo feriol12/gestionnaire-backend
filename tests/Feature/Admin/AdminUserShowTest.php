@@ -93,7 +93,8 @@ final class AdminUserShowTest extends TestCase
         );
         $this->assertSame('be03_placeholder', $data['administrative_status']);
         $this->assertSame(1, $data['auth_version']);
-        // Sans cast BE-03 forcé, la valeur brute est reprise telle quelle.
-        $this->assertSame('2026-01-01 10:00:00', $data['suspended_at']);
+        // BE-03 : suspended_at est casté en datetime sur User ; la ressource
+        // l'émet donc en RFC 3339 (branche DateTimeInterface prévue par BE-06).
+        $this->assertSame('2026-01-01T10:00:00.000+00:00', $data['suspended_at']);
     }
 }

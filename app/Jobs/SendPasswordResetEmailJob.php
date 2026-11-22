@@ -56,7 +56,10 @@ class SendPasswordResetEmailJob implements ShouldQueue
 
         $user = User::find($this->userId);
 
-        if (! $user) {
+        // BE-03 (Q5) : aucun jeton ni lien émis pour un compte suspendu. La
+        // requête publique a déjà répondu de façon neutre ; la tâche se termine
+        // normalement, sans trace distinguable côté client.
+        if (! $user || ! $user->isAdministrativelyActive()) {
             return;
         }
 

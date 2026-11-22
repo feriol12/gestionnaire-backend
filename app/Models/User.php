@@ -36,6 +36,13 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        // BE-03 : métadonnées administratives jamais sérialisées vers le
+        // client (/api/user, login). La vue admin passe par la liste blanche
+        // AdminUserResource. Volontairement absentes de $fillable.
+        'administrative_status',
+        'auth_version',
+        'suspended_at',
+        'suspended_by',
     ];
 
     /**
@@ -46,7 +53,19 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'auth_version' => 'integer',
+        'suspended_at' => 'datetime',
     ];
+
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    /** BE-03 : fail-closed — toute valeur autre que 'active' (NULL compris) refuse. */
+    public function isAdministrativelyActive(): bool
+    {
+        return $this->getAttribute('administrative_status') === self::STATUS_ACTIVE;
+    }
 
 
       // Relation : un utilisateur possède plusieurs budgets

@@ -67,13 +67,27 @@ class PasswordResetController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $status = Password::reset($credentials, function (User $user, string $password) {
+        // BE-03 (Q5, A1) : un compte suspendu ne tire aucun effet du reset
+        // (mot de passe inchangé, aucun accès rétabli) et reçoit la même
+        // réponse publique qu'un lien invalide. Le broker consomme le jeton.
+        $refused = false;
+
+        $status = Password::reset($credentials, function (User $user, string $password) use (&$refused) {
             // AUTH3-05 : changement d'identifiants = révocation des jetons
             // personnels de CE compte (jetons hérités de l'ancien modèle
             // navigateur), dans la même transaction que le nouveau mot de passe.
             // Les sessions existantes tombent d'elles-mêmes : AuthenticateSession
             // compare l'empreinte du mot de passe stockée en session.
-            DB::transaction(function () use ($user, $password) {
+            DB::transaction(function () use ($user, $password, &$refused) {
+                // BE-03 : statut relu sous le verrou de la ligne users, sérialisé
+                // avec une suspension concurrente (même ordre de verrouillage).
+                $current = User::query()->whereKey($user->getKey())->lockForUpdate()->value('administrative_status');
+                if ($current !== User::STATUS_ACTIVE) {
+                    $refused = true;
+
+                    return;
+                }
+
                 $user->forceFill(['password' => Hash::make($password)])
                     ->setRememberToken(Str::random(60));
                 $user->save();
@@ -81,10 +95,12 @@ class PasswordResetController extends Controller
                 $user->tokens()->delete();
             });
 
-            event(new PasswordReset($user));
+            if (! $refused) {
+                event(new PasswordReset($user));
+            }
         });
 
-        if ($status !== Password::PASSWORD_RESET) {
+        if ($refused || $status !== Password::PASSWORD_RESET) {
             // Jeton invalide, expiré, déjà utilisé ou adresse inconnue : même
             // réponse dans tous les cas.
             return response()->json([
