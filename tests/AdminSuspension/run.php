@@ -148,6 +148,7 @@ function barrierRace(string $name, array $inputA, array $inputB): array
 const HOLD = 2.0;
 $REASON = 'Motif administratif fictif BE-03';
 
+$startedAt = date(DATE_ATOM);
 Carbon::setTestNow(Carbon::now()->startOfSecond());
 
 // =========================================================== T17 — migration
@@ -344,6 +345,7 @@ $r = be03Req('admin', 'GET', "/api/admin/users/$A", $adm);
 check('BE-06 detail now carries BE-03 fields', [$r['status'], $r['data']['data']['administrative_status'] ?? null, $r['data']['data']['auth_version'] ?? null, array_key_exists('suspended_at', $r['data']['data'] ?? [])], [200, 'active', 3, true]);
 $r2 = be03Req('admin', 'GET', '/api/admin/users?per_page=50', $adm);
 check('BE-06 list carries BE-03 fields', collect($r2['data']['data'] ?? [])->every(fn ($u) => isset($u['administrative_status'], $u['auth_version'])), true);
+check('F-02 list rows never carry suspended_at (detail only)', collect($r2['data']['data'] ?? [])->contains(fn ($u) => array_key_exists('suspended_at', $u)), false);
 foreach (['detail' => $r, 'list' => $r2] as $label => $resp) {
     $raw = strtolower($resp['raw']);
     check("S17/T14 $label: no finance, reason or suspended_by", str_contains($raw, 'amount') || str_contains($raw, 'expense') || str_contains($raw, 'budget') || str_contains($raw, strtolower($REASON)) || str_contains($raw, 'suspended_by'), false);
@@ -383,7 +385,11 @@ $before = DB::table('expenses')->where('user_id', $B)->count();
 check('T10a in-flight write admitted first commits', $w['status'], 201);
 check('T10a suspension waited for the write lock', $s['elapsed'] >= HOLD * 0.75, true);
 check('T10a suspension then succeeds', $s['status'], 200);
-check('T10a suspension committed after the write', $s['data'] !== null && $w['end'] <= microtime(true), true);
+// F-14 : ordre réel (horloge microtime de la même machine) : la suspension a
+// démarré pendant que l'écriture tenait le verrou, et l'écriture a répondu
+// (donc commité) AVANT que la suspension ne réponde.
+check('T10a suspension started while the write held the lock', $s['start'] < $w['end'], true);
+check('T10a write committed before the suspension completed', $w['end'] < $s['end'], true);
 be03Console();
 check('T10a exactly one new expense', DB::table('expenses')->where('user_id', $B)->count(), $before + 1);
 check('T10a next write refused', in_array(be03Client('POST', '/api/expenses', $sessB, $expense)['status'], [401, 403], true), true);
@@ -419,6 +425,25 @@ $late = [];
 check('T10c suspension succeeds', $s['status'], 200);
 check('T10c racing login waited and got the generic 401', [$l['status'], $l['elapsed'] >= HOLD * 0.75], [401, true]);
 check('T10c racing login left no usable session', be03Client('GET', '/api/user', $late)['status'], 401);
+
+// T10d : même course, sessions client « database ». La purge transactionnelle
+// (DELETE … WHERE user_id) pose des verrous de plage sur l'index sessions.user_id :
+// la création de session concurrente peut attendre le commit (latence bornée par la
+// transition). Seul le résultat est affirmé ici, pas la chronologie.
+check('T10d reauthenticate', be03Reauth($adm, $secret)['status'], 200);
+check('T10d reactivate B', be03Req('admin', 'POST', "/api/admin/users/$B/reactivate", $adm, body('client.b@example.test'))['status'], 200);
+check('T10d reauthenticate', be03Reauth($adm, $secret)['status'], 200);
+$lateDb = [];
+[$s, $l] = holdRace('login-race-db', ['kind' => 'admin', 'method' => 'POST', 'uri' => "/api/admin/users/$B/suspend", 'jar' => $adm, 'body' => body('client.b@example.test'), 'hold' => ['sql' => 'insert into `notification_outbox`', 'seconds' => HOLD]],
+    function () use (&$lateDb) {
+        $lateDb = [];
+        be03Req('client', 'GET', '/sanctum/csrf-cookie', $lateDb, [], [], ['SESSION_DRIVER' => 'database']);
+
+        return be03Req('client', 'POST', '/api/login', $lateDb, ['email' => 'client.b@example.test', 'password' => BE03_CLIENT_PASSWORD], [], ['SESSION_DRIVER' => 'database']);
+    });
+check('T10d suspension succeeds', $s['status'], 200);
+check('T10d racing database-session login refused with the generic 401', $l['status'], 401);
+check('T10d no usable database session', be03Client('GET', '/api/user', $lateDb, [], 'database')['status'], 401);
 
 // ======================================== T11 — transitions simultanées
 $adm2 = [];
@@ -462,6 +487,42 @@ check('T15 cached routes: suspended D refused at login', be03ClientLogin($dJar, 
 be03Console();
 Artisan::call('route:clear');
 
+// ======================== F-04 / F-03 — no-store sur toutes les erreurs admin, 429
+$nostore = fn (array $r) => $r['headers']->get('Cache-Control') === 'no-store, private';
+$errs = [];
+$anon = [];
+be03Req('admin', 'GET', '/api/admin/csrf', $anon);
+$errs['401 anonymous'] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $anon, body('client.b@example.test'));
+$errs['401 bearer'] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, body('client.b@example.test'), ['HTTP_AUTHORIZATION' => 'Bearer x']);
+$errs['403 origin'] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, body('client.b@example.test'), ['HTTP_ORIGIN' => BE03_CLIENT]);
+$noCsrf = $adm;
+unset($noCsrf['_csrf']);
+$errs['419 csrf'] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $noCsrf, body('client.b@example.test'));
+Carbon::setTestNow(now()->addSeconds(301));
+$errs['403 recent auth'] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, body('client.b@example.test'));
+check('F-04 reauthenticate', be03Reauth($adm, $secret)['status'], 200);
+$errs['422 validation'] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, ['reason' => '']);
+$errs['404 unknown user'] = be03Req('admin', 'POST', '/api/admin/users/999999/suspend', $adm, body('x@example.test'));
+$errs['404 no route'] = be03Req('admin', 'POST', '/api/admin/users/abc/suspend', $adm, body('x@example.test'));
+$errs['405 wrong verb'] = be03Req('admin', 'GET', "/api/admin/users/$B/suspend", $adm);
+$errs['409 redundant'] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, body('client.b@example.test')); // B suspendu depuis T10c
+foreach ($errs as $label => $r) {
+    check("F-04 $label carries no-store, private", [$r['status'], $nostore($r)], [(int) substr($label, 0, 3), true]);
+}
+// F-03 : 10 transitions / minute / IP après le grant MFA ; la 11e ⇒ 429, sans effet.
+check('F-03 reauthenticate', be03Reauth($adm, $secret)['status'], 200);
+$sB0 = state($B);
+$codes = [];
+for ($i = 0; $i < 11; $i++) {
+    $codes[] = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, ['reason' => '', 'confirm_email' => 'client.b@example.test'])['status'];
+}
+$throttled = be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, body('client.b@example.test'));
+check('F-03 ten requests admitted (422), then throttled', [array_count_values($codes)[422] ?? 0, $codes[10], $throttled['status']], [10, 429, 429]);
+check('F-03 429 carries no-store, private', $nostore($throttled), true);
+check('F-03 throttled requests had no effect', state($B), $sB0);
+Carbon::setTestNow(now()->addSeconds(61));
+check('F-03 limiter window resets', be03Req('admin', 'POST', "/api/admin/users/$B/suspend", $adm, ['reason' => ''])['status'], 422);
+
 // ======================================== S16 / S20 — confidentialité, conservation
 $log = @file_get_contents($runtime.'/logs/laravel.log') ?: '';
 check('S16 reason never logged', str_contains($log, $REASON), false);
@@ -471,8 +532,15 @@ check('S20 finances: only the admitted concurrent write was added', DB::table('e
 check('Q8 audit append-only: every row still present', DB::table('admin_audit_events')->count() >= 8, true);
 
 $failed = count(array_filter($results, fn ($r) => ! $r['pass']));
-$evidence = ['engine' => $iso, 'checks' => count($results), 'failed' => $failed, 'results' => $results, 'at' => date(DATE_ATOM)];
-$name = $runtime.'/evidence-'.preg_replace('/[^a-z0-9.]+/i', '-', $iso['version']).'.json';
+// F-12 : une preuve PAR exécution (jamais écrasée), rattachée au code exact exécuté.
+$git = fn (string $args) => trim((string) shell_exec('git -C '.escapeshellarg($root).' '.$args));
+$evidence = [
+    'engine' => $iso, 'image_digest' => getenv('BE03_DB_IMAGE_DIGEST') ?: null,
+    'git_head' => $git('rev-parse HEAD'), 'git_dirty' => $git('status --porcelain') !== '',
+    'php' => PHP_VERSION, 'started_at' => $startedAt, 'finished_at' => date(DATE_ATOM),
+    'checks' => count($results), 'failed' => $failed, 'results' => $results,
+];
+$name = $runtime.'/evidence-'.preg_replace('/[^a-z0-9.]+/i', '-', $iso['version']).'-'.date('Ymd\THis').'-'.bin2hex(random_bytes(3)).'.json';
 file_put_contents($name, json_encode($evidence, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 echo "\n".(count($results) - $failed).'/'.count($results)." checks passed — evidence: $name\n";
 $GLOBALS['be03Completed'] = true;

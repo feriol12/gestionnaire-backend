@@ -153,6 +153,13 @@ function be03AssertIsolated(): array
  */
 function be03Req(string $kind, string $method, string $uri, array &$jar, array $body = [], array $server = [], array $env = []): array
 {
+    if (! isset($env['SESSION_DRIVER'])) {
+        // Toujours explicite (putenv est global au processus) :
+        //  - admin : configuration client « déployée » vue par la purge physique
+        //    (F-06) = database ;
+        //  - client/bearer : file par défaut, database seulement si demandé.
+        $env['SESSION_DRIVER'] = $kind === 'admin' ? 'database' : 'file';
+    }
     $app = be03App($env);
     $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
     $base = $kind === 'admin' ? BE03_ADMIN : BE03_API;
@@ -191,7 +198,7 @@ function be03Req(string $kind, string $method, string $uri, array &$jar, array $
     }
     $kernel->terminate($request, $response);
 
-    return ['status' => $response->getStatusCode(), 'data' => $data, 'raw' => $raw, 'headers' => $response->headers, 'elapsed' => $elapsed];
+    return ['status' => $response->getStatusCode(), 'data' => $data, 'raw' => $raw, 'headers' => $response->headers, 'elapsed' => $elapsed, 'start' => $started, 'end' => $started + $elapsed];
 }
 
 function be03Otp(string $secret, int $offset = 0): string

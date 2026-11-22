@@ -36,7 +36,11 @@ if (! empty($input['wait_go'])) {
 $result = (function () use ($input, &$jar, $hold, $dir, $slot) {
     $kind = $input['kind'];
     $base = $kind === 'admin' ? BE03_ADMIN : BE03_API;
-    $app = be03App($input['env'] ?? []);
+    $env = $input['env'] ?? [];
+    if ($kind === 'admin' && ! isset($env['SESSION_DRIVER'])) {
+        $env['SESSION_DRIVER'] = 'database'; // identique à be03Req()
+    }
+    $app = be03App($env);
     // Écouteur posé avant le traitement : il s'exécute dans la transaction ouverte.
     if ($hold !== null) {
         $app['events']->listen(QueryExecuted::class, function (QueryExecuted $q) use ($hold, $dir, $slot) {
