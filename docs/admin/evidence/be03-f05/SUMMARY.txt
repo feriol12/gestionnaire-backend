@@ -1,0 +1,67 @@
+BE-03 / F-05 — résumé des exécutions (extraits bruts, non retouchés)
+SHA exécuté : b8794383a4b1c84b73e0e0c202c0711e6b294049
+Environnement : MySQL 8.4.3 local isolé (port dédié, datadir jetable), données fictives
+
+PHPUnit : Tests:    2 warnings, 2 skipped, 370 passed (2755 assertions)
+Banc BE-03 : 166/166 checks passed
+
+Non-régression (SQLite, copies isolées, vendor physique par copie) :
+##### base 1a3141c own-autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-06 TOTAL 80 FAILED 0
+##### new b879438 own-autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-06 PASS unknown id exact error body
+BE-06 TOTAL 81 FAILED 0
+
+Corps d'erreur admin AVANT (ce4021e) :
+POST login bad creds 401           401 no-store, private {"message":"ADMIN_AUTH_FAILED"}
+POST login invalid 422             422 no-store, private {"message":"The email field must be a valid email address. (and 1 more error)","errors":{"email":["The email field must be a valid email address."],"password":["The password field is required."]}}
+POST mfa no challenge 401          401 no-store, private {"message":"ADMIN_CHALLENGE_REQUIRED"}
+GET session anonymous 401          401 no-store, private {"message":""}
+GET users anonymous 401            401 no-store, private {"message":""}
+POST suspend anonymous 401         401 no-store, private {"message":""}
+bearer 401                         401 no-store, private {"code":"ADMIN_BEARER_REFUSED"}
+origin 403                         403 no-store, private {"code":"ADMIN_ORIGIN_REFUSED"}
+csrf 419                           419 no-store, private {"message":"CSRF token mismatch."}
+GET users per_page=99 422          422 no-store, private {"message":"The per page field must not be greater than 50.","errors":{"per_page":["The per page field must not be greater than 50."]}}
+GET users/999 404 (BE-06)          404 no-store, private {"code":"USER_NOT_FOUND"}
+GET users/abc 404 (no route)       404 no-store, private {"message":"The route api/admin/users/abc could not be found."}
+GET suspend 405                    405 no-store, private {"message":"The GET method is not supported for route api/admin/users/1/suspend. Supported methods: POST."}
+POST suspend recent-auth 403       403 no-store, private {"message":"ADMIN_RECENT_AUTH_REQUIRED"}
+POST suspend 422 reason            422 no-store, private {"message":"Les données fournies sont invalides.","errors":{"reason":["The reason field is required."]}}
+POST suspend 422 confirm           422 no-store, private {"message":"Les données fournies sont invalides.","errors":{"confirm_email":["La confirmation ne correspond pas au compte ciblé."]}}
+POST suspend 404 (BE-03)           404 no-store, private {"message":"Utilisateur introuvable.","code":"USER_NOT_FOUND"}
+POST suspend 200                   200 no-store, private {"user_id":1,"administrative_status":"suspended","changed_at":"2026-11-22T14:35:01Z","event_id":"<uuid>"}
+POST suspend 409                   409 no-store, private {"message":"Ce compte est déjà suspendu.","code":"ALREADY_SUSPENDED"}
+POST suspend 429                   429 no-store, private {"message":"Too Many Attempts."}
+misconfigured origin 503           503 no-store, private {"code":"ADMIN_UNAVAILABLE"}
+
+Corps d'erreur admin APRÈS (b879438) :
+POST login bad creds 401           401 no-store, private {"message":"ADMIN_AUTH_FAILED"}
+POST login invalid 422             422 no-store, private {"message":"The email field must be a valid email address. (and 1 more error)","errors":{"email":["The email field must be a valid email address."],"password":["The password field is required."]}}
+POST mfa no challenge 401          401 no-store, private {"message":"ADMIN_CHALLENGE_REQUIRED"}
+GET session anonymous 401          401 no-store, private {"message":""}
+GET users anonymous 401            401 no-store, private {"message":""}
+POST suspend anonymous 401         401 no-store, private {"message":""}
+bearer 401                         401 no-store, private {"code":"ADMIN_BEARER_REFUSED"}
+origin 403                         403 no-store, private {"code":"ADMIN_ORIGIN_REFUSED"}
+csrf 419                           419 no-store, private {"message":"CSRF token mismatch."}
+GET users per_page=99 422          422 no-store, private {"message":"The per page field must not be greater than 50.","errors":{"per_page":["The per page field must not be greater than 50."]}}
+GET users/999 404 (BE-06)          404 no-store, private {"message":"Utilisateur introuvable","code":"USER_NOT_FOUND"}
+GET users/abc 404 (no route)       404 no-store, private {"message":"The route api/admin/users/abc could not be found."}
+GET suspend 405                    405 no-store, private {"message":"The GET method is not supported for route api/admin/users/1/suspend. Supported methods: POST."}
+POST suspend recent-auth 403       403 no-store, private {"message":"ADMIN_RECENT_AUTH_REQUIRED"}
+POST suspend 422 reason            422 no-store, private {"message":"Les données fournies sont invalides.","errors":{"reason":["The reason field is required."]}}
+POST suspend 422 confirm           422 no-store, private {"message":"Les données fournies sont invalides.","errors":{"confirm_email":["La confirmation ne correspond pas au compte ciblé."]}}
+POST suspend 404 (BE-03)           404 no-store, private {"message":"Utilisateur introuvable.","code":"USER_NOT_FOUND"}
+POST suspend 200                   200 no-store, private {"user_id":1,"administrative_status":"suspended","changed_at":"2026-11-22T14:45:01Z","event_id":"<uuid>"}
+POST suspend 409                   409 no-store, private {"message":"Ce compte est déjà suspendu.","code":"ALREADY_SUSPENDED"}
+POST suspend 429                   429 no-store, private {"message":"Too Many Attempts."}
+misconfigured origin 503           503 no-store, private {"code":"ADMIN_UNAVAILABLE"}
