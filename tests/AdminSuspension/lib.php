@@ -100,6 +100,14 @@ const BE03_CLIENT_PASSWORD = 'fictional-client-password-01';
 function be03App(array $env = []): Illuminate\Foundation\Application
 {
     global $root, $runtime;
+    static $previous = null;
+    // Une application neuve par requête ne doit pas laisser sa connexion PDO
+    // ouverte : sans fermeture explicite, le banc épuise max_connections.
+    if ($previous !== null && $previous->resolved('db')) {
+        foreach (array_keys($previous['db']->getConnections()) as $name) {
+            $previous['db']->disconnect($name);
+        }
+    }
     foreach ($env as $key => $value) {
         putenv($key.'='.$value);
         $_ENV[$key] = $value;
@@ -109,6 +117,7 @@ function be03App(array $env = []): Illuminate\Foundation\Application
     $app = require $root.'/bootstrap/app.php';
     $app->loadEnvironmentFrom('NO-ENV-BE03-TEST');
     $app->useStoragePath($runtime);
+    $previous = $app;
 
     return $app;
 }
