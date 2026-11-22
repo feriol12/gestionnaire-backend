@@ -50,7 +50,9 @@ function initMfaSchema() {
         '2019_12_14_000001_create_personal_access_tokens_table.php','2026_04_20_125418_create_expenses_table.php',
         '2026_05_08_211149_create_budgets_table.php','2026_06_02_232941_add_last_activity_to_users_table.php',
         '2026_10_02_002051_create_jobs_table.php','2026_10_06_210747_create_sessions_table.php',
-        '2026_10_27_000001_create_admin_foundations.php','2026_10_28_000001_create_admin_mfa.php'] as $f) (require $root.'/database/migrations/'.$f)->up();
+        '2026_10_27_000001_create_admin_foundations.php','2026_10_28_000001_create_admin_mfa.php',
+        // BE-03 : schéma client statut/version requis par la barrière fail-closed.
+        '2026_11_22_000001_add_administrative_status_to_users.php','2026_11_22_000002_create_admin_audit_events_table.php','2026_11_22_000003_create_notification_outbox_table.php'] as $f) (require $root.'/database/migrations/'.$f)->up();
 }
 
 if (defined('MFA_HELPERS_ONLY')) return;
