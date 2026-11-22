@@ -13,13 +13,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Mapping : la clé JSON « nom » est alimentée par la colonne User.name.
  *
- * POINT IMPORTANT BE-03 : les colonnes administrative_status, auth_version
- * (côté utilisateur) et suspended_at n'existent pas encore sur `users`.
- * Tant que la migration BE-03 n'est pas livrée, ces trois clés sont
- * omises — aucune valeur n'est inventée et la réponse NE SATISFAIT PAS
- * encore le contrat complet. L'émission de chaque clé est pilotée par
- * hasColumn(), de sorte qu'aucun changement ne soit nécessaire ici
- * lorsque BE-03 livrera les colonnes.
+ * BE-03 livre les colonnes administrative_status, auth_version et
+ * suspended_at. L'émission de chaque clé reste pilotée par hasColumn()
+ * (colonne absente ⇒ clé omise, jamais de valeur inventée).
+ * suspended_at n'appartient qu'à la FICHE (GOV-05 V1.1 §3, OpenCode F-02) :
+ * il n'est émis que pour une ressource marquée detail().
  *
  * password, remember_token, suspension_reason (motif interne) et toute
  * donnée financière ne sont jamais sérialisés — liste blanche, jamais
@@ -29,6 +27,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class AdminUserResource extends JsonResource
 {
+    /** Fiche (GET /users/{id}) plutôt que ligne de liste. */
+    private bool $detail = false;
+
+    /** Marque la ressource comme fiche : ajoute suspended_at (GOV-05 V1.1 §3). */
+    public function detail(): static
+    {
+        $this->detail = true;
+
+        return $this;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -54,12 +63,10 @@ class AdminUserResource extends JsonResource
             $data['auth_version'] = $this->auth_version;
         }
 
-        if ($this->hasColumn('suspended_at')) {
+        if ($this->detail && $this->hasColumn('suspended_at')) {
             $suspendedAt = $this->suspended_at;
-            // Selon la migration BE-03, la colonne sera datetime (cast) ou non :
-            // on sérialise en ISO 8601 uniquement si l'instance est déjà une
-            // date, sinon la valeur brute (string ou null) est reprise telle
-            // quelle — aucune transformation approximative, aucune invention.
+            // Cast datetime sur User depuis BE-03 : ISO 8601 ; une valeur brute
+            // (string ou null) est reprise telle quelle, sans invention.
             $data['suspended_at'] = $suspendedAt instanceof \DateTimeInterface
                 ? $suspendedAt->format(DATE_RFC3339_EXTENDED)
                 : $suspendedAt;

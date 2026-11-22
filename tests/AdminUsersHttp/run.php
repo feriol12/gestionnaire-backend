@@ -114,6 +114,9 @@ function initBe06Schema(): void {
         '2026_05_08_211149_create_budgets_table.php', '2026_06_02_232941_add_last_activity_to_users_table.php',
         '2026_10_02_002051_create_jobs_table.php', '2026_10_06_210747_create_sessions_table.php',
         '2026_10_27_000001_create_admin_foundations.php', '2026_10_28_000001_create_admin_mfa.php',
+        // BE-03 : schéma client statut/version requis par la barrière fail-closed.
+        '2026_11_22_000001_add_administrative_status_to_users.php', '2026_11_22_000002_create_admin_audit_events_table.php',
+        '2026_11_22_000003_create_notification_outbox_table.php',
     ];
     foreach ($list as $f) (require $root.'/database/migrations/'.$f)->up();
 }
@@ -222,7 +225,8 @@ check('admin session persisted', DB::table('admin_sessions')->where('user_id', 1
 $r = req('GET', '/api/admin/users', $jar);
 check('list authorized', $r['status'], 200);
 check('list rows', count($r['data']['data'] ?? []), 3);
-check('list row contract keys', array_keys($r['data']['data'][0]), ['id', 'nom', 'email', 'created_at']);
+// BE-03 livré : liste = contrat liste (GOV-05 V1.1 §3), suspended_at réservé à la fiche.
+check('list row contract keys', array_keys($r['data']['data'][0]), ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version']);
 check('list has no name key', in_array('name', array_keys($r['data']['data'][0] ?? [])), false);
 check('list meta total', $r['data']['meta']['total'] ?? null, 3);
 check('list meta current page', $r['data']['meta']['current_page'] ?? null, 1);
@@ -231,7 +235,7 @@ be06HttpChecks($r, 'list');
 // R2: whitelist enforced row by row, then raw payload scan.
 check('list every row contract keys', count(array_filter(
     $r['data']['data'] ?? [],
-    fn ($row) => array_keys($row) !== ['id', 'nom', 'email', 'created_at']
+    fn ($row) => array_keys($row) !== ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version']
 )), 0);
 check('list payload clean', sensitiveLeak($r['data']), null);
 
@@ -269,7 +273,7 @@ check('search alice payload clean', sensitiveLeak($r['data']), null);
 // K. Detail + 404
 $r = req('GET', '/api/admin/users/'.$alice->id, $jar);
 check('detail authorized', $r['status'], 200);
-check('detail contract keys', array_keys($r['data']['data'] ?? []), ['id', 'nom', 'email', 'created_at']);
+check('detail contract keys', array_keys($r['data']['data'] ?? []), ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version', 'suspended_at']);
 check('detail nom from name', $r['data']['data']['nom'] ?? null, 'Alice Toto');
 // R2: Cache-Control + csrf on the 200 detail response, plus raw scan.
 be06HttpChecks($r, 'detail');
@@ -277,6 +281,9 @@ check('detail payload clean', sensitiveLeak($r['data']), null);
 $r = req('GET', '/api/admin/users/999999', $jar);
 check('unknown id is 404', $r['status'], 404);
 check('unknown id code', $r['data']['code'] ?? null, 'USER_NOT_FOUND');
+// F-05 / addenda GOV-05 22/11/2026 : corps exact {message, code}, rien d'autre
+// (ni identifiant demandé écho, ni donnée de compte).
+check('unknown id exact error body', $r['data'], ['message' => 'Utilisateur introuvable', 'code' => 'USER_NOT_FOUND']);
 // R2: the 404 answer keeps the admin anti-cache convention. The csrf
 // refresh is only delivered by respond() on 200 payloads (validated BE-06
 // convention); the short-circuit refusal deliberately omits it.
@@ -322,6 +329,8 @@ $allowed = [
     'api/admin/csrf', 'api/admin/login', 'api/admin/enrollment', 'api/admin/mfa', 'api/admin/recovery',
     'api/admin/logout', 'api/admin/session', 'api/admin/reauthenticate', 'api/admin/factor/change',
     'api/admin/users', 'api/admin/users/{id}',
+    // BE-03 : seules mutations admin ajoutées (GOV-05 A1).
+    'api/admin/users/{id}/suspend', 'api/admin/users/{id}/reactivate',
 ];
 $actual = array_values(array_filter(array_map(
     fn ($r) => $r->uri(),

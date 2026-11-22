@@ -35,7 +35,9 @@ DB::statement('PRAGMA foreign_keys=ON');
 foreach(['2014_10_12_000000_create_users_table.php','2014_10_12_100000_create_password_reset_tokens_table.php',
  '2019_12_14_000001_create_personal_access_tokens_table.php','2026_04_20_125418_create_expenses_table.php',
  '2026_05_08_211149_create_budgets_table.php','2026_06_02_232941_add_last_activity_to_users_table.php',
- '2026_10_02_002051_create_jobs_table.php','2026_10_06_210747_create_sessions_table.php','2026_10_27_000001_create_admin_foundations.php'] as $file) {
+ '2026_10_02_002051_create_jobs_table.php','2026_10_06_210747_create_sessions_table.php','2026_10_27_000001_create_admin_foundations.php',
+    // BE-03 : le schéma client exige désormais statut/version (barrière fail-closed).
+    '2026_11_22_000001_add_administrative_status_to_users.php','2026_11_22_000002_create_admin_audit_events_table.php','2026_11_22_000003_create_notification_outbox_table.php'] as $file) {
     (require $root.'/database/migrations/'.$file)->up();
 }
 $user=User::create(['name'=>'Fixture','email'=>'client@example.test','password'=>'fixture-password']);

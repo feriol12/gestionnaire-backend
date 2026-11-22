@@ -1,0 +1,19 @@
+BE-03 — résumé des exécutions REVIEW-01 (extrait brut des sorties, non retouché)
+SHA exécuté : 7e9fc4613d291640315f69fce80314a649055c44
+
+PHPUnit MySQL 8.4.3   : Tests:    2 warnings, 2 skipped, 369 passed (2750 assertions)
+PHPUnit MariaDB 10.11.19 : Tests:    2 warnings, 2 skipped, 369 passed (2752 assertions)
+
+Non-régression (SQLite, copies isolées, vendor physique par copie) :
+##### base 1a3141c autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-06 TOTAL 80 FAILED 0
+##### new 7e9fc46 autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-06 TOTAL 80 FAILED 0

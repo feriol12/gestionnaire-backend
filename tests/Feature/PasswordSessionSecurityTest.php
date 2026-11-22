@@ -185,8 +185,10 @@ class PasswordSessionSecurityTest extends TestCase
             return $response;
         };
 
-        // Contrôle : le « remember » courant ouvre bien une session.
-        $withRecaller($oldRecaller)->assertOk();
+        // BE-03 (Q1/Q2, fail-closed) : une session reconstituée par le seul cookie
+        // « remember » ne porte aucune version d'accès liée au login ; la barrière
+        // client.active la refuse donc toujours. (Avant BE-03 : 200 ici.)
+        $withRecaller($oldRecaller)->assertUnauthorized();
 
         $this->login('A', $user->email, self::PASSWORD)->assertOk();
         $this->changePassword('A', $this->payload())->assertOk();

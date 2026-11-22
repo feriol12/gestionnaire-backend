@@ -81,6 +81,13 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by('password-change|'.hash('sha256', $request->user()?->getAuthIdentifier().'|'.$request->ip()));
         });
 
+        // BE-03 (OpenCode F-03, GOV-05 : 429 prévu sur suspend/reactivate) :
+        // transitions administratives, appliqué après le grant MFA ; clé = IP
+        // hachée (le principal admin est un singleton).
+        RateLimiter::for('admin-user-transition', function (Request $request) {
+            return Limit::perMinute(10)->by('admin-user-transition|'.hash('sha256', (string) $request->ip()));
+        });
+
         $this->routes(function () {
             // LWS-BE-04 : sonde de disponibilité, hors des groupes « web » et
             // « api » : ni session, ni cookie, ni CSRF, ni throttle, ni base de

@@ -29,7 +29,22 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // BE-03 : mêmes valeurs que les défauts de la migration, présentes
+            // aussi sur l'instance en mémoire (Sanctum::actingAs ne relit pas la base).
+            'administrative_status' => 'active',
+            'auth_version' => 1,
         ];
+    }
+
+    /** BE-03 : compte suspendu (état fictif de test). */
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'administrative_status' => 'suspended',
+            'auth_version' => 2,
+            'suspended_at' => now(),
+            'suspended_by' => 1,
+        ]);
     }
 
     /**

@@ -15,4 +15,13 @@ return [
         'table' => 'admin_sessions',
         'lifetime' => 15,
     ],
+    // BE-03 (OpenCode F-06) : copie de la configuration de session CLIENT,
+    // lue par la purge physique complémentaire d'une suspension. En contexte
+    // admin, SelectAdminContext réécrit session.* : ces clés-ci restent celles
+    // du client. Mêmes sources que config/session.php.
+    'client_session' => [
+        'driver' => env('SESSION_DRIVER', 'file'),
+        'connection' => env('SESSION_CONNECTION'),
+        'table' => 'sessions',
+    ],
 ];

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminAuthController as Controller;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminUserStatusController;
 use App\Http\Middleware;
 use Illuminate\Support\Facades\Route;
 
@@ -27,5 +28,11 @@ Route::prefix('api/admin')->middleware([
         // BE-06 — read-only user directory. No mutation, no finance data.
         Route::get('users', [AdminUserController::class, 'index']);
         Route::get('users/{id}', [AdminUserController::class, 'show'])->whereNumber('id');
+        // BE-03 — transitions administratives : MFA récente ≤300 s, motif et
+        // courriel exact revérifiés dans la transaction (ClientAccountTransitions).
+        Route::post('users/{id}/suspend', [AdminUserStatusController::class, 'suspend'])->whereNumber('id')
+            ->middleware('throttle:admin-user-transition');
+        Route::post('users/{id}/reactivate', [AdminUserStatusController::class, 'reactivate'])->whereNumber('id')
+            ->middleware('throttle:admin-user-transition');
     });
 });

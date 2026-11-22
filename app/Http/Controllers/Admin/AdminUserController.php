@@ -18,9 +18,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * champ hors contrat.
  *
  * Les colonnes du contrat portées par BE-03 (administrative_status,
- * auth_version, suspended_at) ne sont pas encore disponibles : la
- * réponse NE SATISFAIT PAS encore le contrat complet — voir
- * AdminUserResource, qui les omet au lieu d'inventer des valeurs.
+ * auth_version, suspended_at) sont livrées ; suspended_at n'est émis que
+ * dans la fiche (AdminUserResource::detail()).
  *
  * Autorisation : entièrement déléguée à la chaîne de middleware admin
  * existante (RequireAdminIdentity + RequireAdminMfa). Aucun mécanisme
@@ -63,9 +62,10 @@ final class AdminUserController extends Controller
 
     /**
      * GET /api/admin/users/{id}
-     * 404 codé USER_NOT_FOUND si l'utilisateur n'existe pas. La route
-     * impose whereNumber('id') : les identifiants non numériques sont
-     * traités comme inexistants (404), jamais comme une recherche libre.
+     * 404 {message, code: USER_NOT_FOUND} si l'utilisateur n'existe pas
+     * (addenda GOV-05 du 22/11/2026, F-05). La route impose
+     * whereNumber('id') : les identifiants non numériques sont traités comme
+     * inexistants (404), jamais comme une recherche libre.
      *
      * @param  Request  $request
      * @param  string  $id
@@ -77,13 +77,15 @@ final class AdminUserController extends Controller
 
         if ($user === null) {
             return response()->json(
-                ['code' => 'USER_NOT_FOUND'],
+                // Addenda GOV-05 22/11/2026 : toute erreur JSON admin porte
+                // message ET code. Message générique, aucun détail sur la cible.
+                ['message' => 'Utilisateur introuvable', 'code' => 'USER_NOT_FOUND'],
                 404,
                 ['Cache-Control' => 'no-store, private']
             );
         }
 
-        return $this->respond(new AdminUserResource($user), $request);
+        return $this->respond((new AdminUserResource($user))->detail(), $request);
     }
 
     /**
