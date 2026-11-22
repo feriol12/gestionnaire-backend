@@ -156,7 +156,8 @@ be03Console();
 $iso = be03AssertIsolated();
 echo 'Engine: '.$iso['version'].' port '.$iso['port'].' database '.$iso['database']."\n";
 Artisan::call('migrate:fresh', ['--force' => true]);
-Artisan::call('migrate:rollback', ['--step' => 3, '--force' => true]);
+// BE-03 (3 migrations) + BE-04 (1 migration, la plus récente).
+Artisan::call('migrate:rollback', ['--step' => 4, '--force' => true]);
 be03Console();
 check('T17 pre-BE-03 schema has no status column', DB::getSchemaBuilder()->hasColumn('users', 'administrative_status'), false);
 
@@ -181,13 +182,17 @@ be03Console();
 $rows = DB::table('users')->orderBy('id')->get();
 check('T17 existing clients migrated active/v1', $rows->every(fn ($r) => $r->administrative_status === 'active' && (int) $r->auth_version === 1 && $r->suspended_at === null && $r->suspended_by === null));
 check('T17 finances untouched by migration', financeFingerprint(), $fingerprint);
+if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+    check('BE-04 append-only triggers installed by migration', (int) DB::selectOne("SELECT COUNT(*) AS c FROM information_schema.triggers WHERE event_object_schema = DATABASE() AND event_object_table = 'admin_audit_events'")->c, 2);
+}
 try {
     DB::table('users')->where('id', $D)->update(['administrative_status' => 'banned']);
     check('T17 CHECK constraint rejects unknown status', false);
 } catch (Illuminate\Database\QueryException) {
     check('T17 CHECK constraint rejects unknown status', true);
 }
-Artisan::call('migrate:rollback', ['--step' => 3, '--force' => true]);
+// BE-03 (3 migrations) + BE-04 (1 migration, la plus récente).
+Artisan::call('migrate:rollback', ['--step' => 4, '--force' => true]);
 be03Console();
 check('T17 down() removes BE-03 schema', [DB::getSchemaBuilder()->hasColumn('users', 'auth_version'), DB::getSchemaBuilder()->hasTable('admin_audit_events'), DB::getSchemaBuilder()->hasTable('notification_outbox')], [false, false, false]);
 check('T17 rollback keeps finances', financeFingerprint(), $fingerprint);
@@ -293,6 +298,25 @@ $outbox = DB::table('notification_outbox')->where('correlation_id', $r['data']['
 check('T04 outbox intention', [$outbox->type, (int) $outbox->recipient_user_id, $outbox->status, (int) $outbox->attempts, json_decode($outbox->payload, true)], ['client.account_suspended', $A, 'pending', 0, ['template' => 'account_suspended']]);
 check('T04 outbox carries no reason nor email', str_contains(json_encode($outbox), $REASON) || str_contains(json_encode($outbox), 'client.a@'), false);
 check('T04 finances preserved', financeFingerprint(), $fingerprint);
+
+// ===================== BE-04 A01/A02 — journal append-only en base (compte SQL du banc)
+be03Console();
+$t04Event = $r['data']['event_id'];
+$t04Row = (array) DB::table('admin_audit_events')->where('event_id', $t04Event)->first();
+foreach ([
+    'A01 UPDATE of the reason refused' => fn () => DB::table('admin_audit_events')->where('event_id', $t04Event)->update(['reason' => 'réécrit']),
+    'A01 table-wide UPDATE refused' => fn () => DB::update("UPDATE admin_audit_events SET outcome = 'refused_redundant'"),
+    'A02 DELETE of the row refused' => fn () => DB::table('admin_audit_events')->where('event_id', $t04Event)->delete(),
+    'A02 table-wide DELETE refused' => fn () => DB::delete('DELETE FROM admin_audit_events'),
+] as $label => $statement) {
+    try {
+        $statement();
+        check("BE-04 $label", false);
+    } catch (Illuminate\Database\QueryException $e) {
+        check("BE-04 $label", str_contains($e->getMessage(), 'append-only'));
+    }
+}
+check('BE-04 A01/A02 audit row unchanged after refused statements', (array) DB::table('admin_audit_events')->where('event_id', $t04Event)->first(), $t04Row);
 
 // ================================================== T06 / T07 — refus client
 $r = be03Client('GET', '/api/user', $sessFile);
@@ -540,6 +564,32 @@ be03Console();
 check('S20 no user deleted', DB::table('users')->count(), 4);
 check('S20 finances: only the admitted concurrent write was added', DB::table('expenses')->count(), 4);
 check('Q8 audit append-only: every row still present', DB::table('admin_audit_events')->count() >= 8, true);
+
+// ===================== BE-04 A12 — rollback / replay de la migration BE-04 sans perte d'audit
+$auditFingerprint = fn () => sha1(json_encode(DB::table('admin_audit_events')->orderBy('id')->get()->all()));
+$triggerCount = fn () => (int) DB::selectOne("SELECT COUNT(*) AS c FROM information_schema.triggers WHERE event_object_schema = DATABASE() AND event_object_table = 'admin_audit_events'")->c;
+$auditBefore = $auditFingerprint();
+$auditRows = DB::table('admin_audit_events')->count();
+check('BE-04 A12 triggers present before rollback', $triggerCount(), 2);
+Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]);
+be03Console();
+check('BE-04 A12 rollback drops only the triggers, every audit row kept', [$triggerCount(), DB::getSchemaBuilder()->hasTable('admin_audit_events'), DB::table('admin_audit_events')->count(), $auditFingerprint()], [0, true, $auditRows, $auditBefore]);
+Artisan::call('migrate', ['--force' => true]);
+be03Console();
+check('BE-04 A12 replay reinstalls the triggers, audit identical', [$triggerCount(), $auditFingerprint()], [2, $auditBefore]);
+try {
+    DB::table('admin_audit_events')->update(['reason' => null]);
+    check('BE-04 A12 UPDATE refused again after replay', false);
+} catch (Illuminate\Database\QueryException $e) {
+    check('BE-04 A12 UPDATE refused again after replay', str_contains($e->getMessage(), 'append-only'));
+}
+check('BE-04 A12 finances unchanged by the BE-04 rollback/replay', DB::table('expenses')->count(), 4);
+
+// ===================== BE-04 A13 — constat de limite (documentée, non une protection)
+// TRUNCATE ne déclenche pas les triggers : seuls les privilèges SQL l'empêchent.
+// Exécuté en DERNIER, sur la base jetable du banc uniquement.
+DB::statement('TRUNCATE TABLE admin_audit_events');
+check('BE-04 A13 limit observed: TRUNCATE bypasses row triggers (privileges required)', DB::table('admin_audit_events')->count(), 0);
 
 $failed = count(array_filter($results, fn ($r) => ! $r['pass']));
 // F-12 : une preuve PAR exécution (jamais écrasée), rattachée au code exact exécuté.
