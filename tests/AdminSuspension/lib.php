@@ -17,6 +17,17 @@
 
 $root = dirname(__DIR__, 2);
 $runtime = $root.'/storage/app/admin-be03/runtime';
+// Le banc principal repart d'un runtime vierge : cache des limiteurs, sessions
+// fichier, journaux et courses d'une exécution précédente (horloge figée
+// différente) ne doivent pas fausser la suivante. Jamais dans un worker.
+if (basename($_SERVER['SCRIPT_FILENAME'] ?? '') === 'run.php' && is_dir($runtime)) {
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($runtime, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($it as $f) {
+        if (! str_starts_with($f->getFilename(), 'evidence-')) {
+            $f->isDir() ? @rmdir($f->getPathname()) : unlink($f->getPathname());
+        }
+    }
+}
 foreach (['cache', 'framework/sessions', 'framework/cache/data', 'framework/views', 'logs', 'race'] as $dir) {
     if (! is_dir($runtime.'/'.$dir)) {
         mkdir($runtime.'/'.$dir, 0700, true);
@@ -54,7 +65,9 @@ foreach ([
     'DB_USERNAME' => be03Env('BE03_DB_USERNAME'),
     'DB_PASSWORD' => getenv('BE03_DB_PASSWORD') ?: '',
     'DATABASE_URL' => '',
-    'CACHE_STORE' => 'array',
+    // Cache fichier du runtime (config/cache.php lit CACHE_DRIVER) : les
+    // limiteurs restent réalistes d'une requête (application neuve) à l'autre.
+    'CACHE_DRIVER' => 'file',
     'MAIL_MAILER' => 'array',
     'QUEUE_CONNECTION' => 'sync',
     'LOG_CHANNEL' => 'single',
