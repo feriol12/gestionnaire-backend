@@ -18,6 +18,9 @@ class Handler extends ExceptionHandler
         'password_confirmation',
         'otp',
         'recovery_code',
+        // BE-03 (SEC-01 S16) : motif administratif et confirmation de cible.
+        'reason',
+        'confirm_email',
     ];
 
     /**

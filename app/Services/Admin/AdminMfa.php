@@ -231,11 +231,32 @@ final class AdminMfa
         });
     }
 
+    /** Recent proof window (strict: 300 s itself is already too old), unchanged from Lot 2. */
+    private function assertRecent(object $g): void
+    {
+        $now = now()->timestamp;
+        abort_unless($now >= (int) $g->authenticated_at && $now < (int) $g->authenticated_at + 300, 403, 'ADMIN_RECENT_AUTH_REQUIRED');
+    }
+
+    /**
+     * BE-03 (Q7): full grant AND recent re-authentication, re-verified under the
+     * singleton row lock inside the CALLER's transaction, so the sensitive
+     * mutation commits only if the admin proof was valid at that point.
+     */
+    public function requireRecentAuth(Request $r): AdminIdentity
+    {
+        if (DB::transactionLevel() < 1) {
+            throw new \LogicException('Recent admin authentication must be checked inside the mutation transaction.');
+        }
+        $a = $this->identity(); $this->assertRecent($this->grant($r, $a));
+        return $a;
+    }
+
     public function changeFactor(Request $r): void
     {
         DB::transaction(function () use ($r) {
             $a = $this->identity(); $g = $this->grant($r, $a);
-            abort_unless(now()->timestamp >= (int) $g->authenticated_at && now()->timestamp < (int) $g->authenticated_at + 300, 403, 'ADMIN_RECENT_AUTH_REQUIRED');
+            $this->assertRecent($g);
             $this->revokeAll($a);
             DB::table('admin_recovery_codes')->where('admin_id', $a->id)->delete();
             $a->forceFill(['mfa_state' => 'recovery_required', 'totp_ciphertext' => null, 'totp_last_step' => -1])->save();
