@@ -18,8 +18,9 @@ use Laravel\Sanctum\PersonalAccessToken;
  *      preuve ≤300 s revérifiés sous verrou) ;
  *   2. ligne users ciblée (FOR UPDATE) puis CAS statut+version (1 ligne) ;
  *   3. révocation : PAT du modèle exact (tokenable_type ET tokenable_id),
- *      purge des lignes de session « database » en complément de la
- *      révocation logique par auth_version ;
+ *      purge des sessions client « database » (ClientSessionPurger, selon
+ *      SESSION_DRIVER / SESSION_CONNECTION) en complément de la révocation
+ *      logique par auth_version ;
  *   4. audit administratif append-only (motif en clair, accès restreint) ;
  *   5. intention neutre dans l'outbox (aucun envoi ici).
  * Tout échec ⇒ rollback complet : aucun statut sans audit ni outbox.
@@ -32,10 +33,7 @@ final class ClientAccountTransitions
 
     public const REACTIVATE = 'reactivate';
 
-    /** Table de session client : littérale, car SelectAdminContext réécrit session.table en contexte admin. */
-    private const CLIENT_SESSION_TABLE = 'sessions';
-
-    public function __construct(private AdminMfa $mfa) {}
+    public function __construct(private AdminMfa $mfa, private ClientSessionPurger $sessions) {}
 
     public function apply(Request $request, string $action, int $userId, string $reason, string $confirmEmail): TransitionOutcome
     {
@@ -92,7 +90,8 @@ final class ClientAccountTransitions
                 ->where('tokenable_type', $user->getMorphClass())
                 ->where('tokenable_id', $user->getKey())
                 ->delete();
-            DB::table(self::CLIENT_SESSION_TABLE)->where('user_id', $user->getKey())->delete();
+            // Complément physique (F-06) : la révocation réelle est auth_version.
+            $this->sessions->purge((int) $user->getKey());
 
             $eventId = $this->audit($action, 'succeeded', $admin->getKey(), $user->getKey(), $from, $to, $version, $version + 1, $reason, $now);
 
