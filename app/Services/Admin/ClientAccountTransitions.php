@@ -21,7 +21,9 @@ use Laravel\Sanctum\PersonalAccessToken;
  *      purge des sessions client « database » (ClientSessionPurger, selon
  *      SESSION_DRIVER / SESSION_CONNECTION) en complément de la révocation
  *      logique par auth_version ;
- *   4. audit administratif append-only (motif en clair, accès restreint) ;
+ *   4. audit administratif append-only via AdminAuditLog (BE-04 : écrivain
+ *      unique ; UPDATE/DELETE refusés par la base ; motif en clair, accès
+ *      restreint) ;
  *   5. intention neutre dans l'outbox (aucun envoi ici).
  * Tout échec ⇒ rollback complet : aucun statut sans audit ni outbox.
  *
@@ -33,7 +35,7 @@ final class ClientAccountTransitions
 
     public const REACTIVATE = 'reactivate';
 
-    public function __construct(private AdminMfa $mfa, private ClientSessionPurger $sessions) {}
+    public function __construct(private AdminMfa $mfa, private ClientSessionPurger $sessions, private AdminAuditLog $audit) {}
 
     public function apply(Request $request, string $action, int $userId, string $reason, string $confirmEmail): TransitionOutcome
     {
@@ -64,7 +66,7 @@ final class ClientAccountTransitions
             if ($current !== $from) {
                 // Q4 : transition redondante ⇒ 409 sans effet métier ; seul le refus
                 // est tracé (sans motif : minimisation).
-                $this->audit($action, 'refused_redundant', $admin->getKey(), $user->getKey(), $current, $current, $version, $version, null, $now);
+                $this->audit->record('client.'.$action, AdminAuditLog::REFUSED_REDUNDANT, $admin->getKey(), $user->getKey(), $current, $current, $version, $version, null, $now);
 
                 return TransitionOutcome::redundant($to);
             }
@@ -93,7 +95,7 @@ final class ClientAccountTransitions
             // Complément physique (F-06) : la révocation réelle est auth_version.
             $this->sessions->purge((int) $user->getKey());
 
-            $eventId = $this->audit($action, 'succeeded', $admin->getKey(), $user->getKey(), $from, $to, $version, $version + 1, $reason, $now);
+            $eventId = $this->audit->record('client.'.$action, AdminAuditLog::SUCCEEDED, $admin->getKey(), $user->getKey(), $from, $to, $version, $version + 1, $reason, $now);
 
             DB::table('notification_outbox')->insert([
                 'event_id' => (string) Str::uuid(),
@@ -109,25 +111,5 @@ final class ClientAccountTransitions
 
             return TransitionOutcome::changed((int) $user->getKey(), $to, $now, $eventId);
         });
-    }
-
-    private function audit(string $action, string $outcome, int|string $adminId, int|string $userId, ?string $fromStatus, ?string $toStatus, int $before, int $after, ?string $reason, Carbon $at): string
-    {
-        $eventId = (string) Str::uuid();
-        DB::table('admin_audit_events')->insert([
-            'event_id' => $eventId,
-            'action' => 'client.'.$action,
-            'outcome' => $outcome,
-            'admin_id' => $adminId,
-            'target_user_id' => $userId,
-            'from_status' => $fromStatus,
-            'to_status' => $toStatus,
-            'auth_version_before' => $before,
-            'auth_version_after' => $after,
-            'reason' => $reason,
-            'created_at' => $at,
-        ]);
-
-        return $eventId;
     }
 }
