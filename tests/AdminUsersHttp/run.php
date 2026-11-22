@@ -225,8 +225,8 @@ check('admin session persisted', DB::table('admin_sessions')->where('user_id', 1
 $r = req('GET', '/api/admin/users', $jar);
 check('list authorized', $r['status'], 200);
 check('list rows', count($r['data']['data'] ?? []), 3);
-// BE-03 livré : les colonnes existent, la liste blanche BE-06 émet le contrat complet.
-check('list row contract keys', array_keys($r['data']['data'][0]), ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version', 'suspended_at']);
+// BE-03 livré : liste = contrat liste (GOV-05 V1.1 §3), suspended_at réservé à la fiche.
+check('list row contract keys', array_keys($r['data']['data'][0]), ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version']);
 check('list has no name key', in_array('name', array_keys($r['data']['data'][0] ?? [])), false);
 check('list meta total', $r['data']['meta']['total'] ?? null, 3);
 check('list meta current page', $r['data']['meta']['current_page'] ?? null, 1);
@@ -235,7 +235,7 @@ be06HttpChecks($r, 'list');
 // R2: whitelist enforced row by row, then raw payload scan.
 check('list every row contract keys', count(array_filter(
     $r['data']['data'] ?? [],
-    fn ($row) => array_keys($row) !== ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version', 'suspended_at']
+    fn ($row) => array_keys($row) !== ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version']
 )), 0);
 check('list payload clean', sensitiveLeak($r['data']), null);
 

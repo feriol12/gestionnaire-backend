@@ -18,9 +18,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * champ hors contrat.
  *
  * Les colonnes du contrat portées par BE-03 (administrative_status,
- * auth_version, suspended_at) ne sont pas encore disponibles : la
- * réponse NE SATISFAIT PAS encore le contrat complet — voir
- * AdminUserResource, qui les omet au lieu d'inventer des valeurs.
+ * auth_version, suspended_at) sont livrées ; suspended_at n'est émis que
+ * dans la fiche (AdminUserResource::detail()).
  *
  * Autorisation : entièrement déléguée à la chaîne de middleware admin
  * existante (RequireAdminIdentity + RequireAdminMfa). Aucun mécanisme
@@ -83,7 +82,7 @@ final class AdminUserController extends Controller
             );
         }
 
-        return $this->respond(new AdminUserResource($user), $request);
+        return $this->respond((new AdminUserResource($user))->detail(), $request);
     }
 
     /**

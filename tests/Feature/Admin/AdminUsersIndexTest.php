@@ -52,6 +52,34 @@ final class AdminUsersIndexTest extends TestCase
         $this->assertFails(['q' => str_repeat('a', 101)]);
     }
 
+    /**
+     * BE-03 / OpenCode F-02 : avec les colonnes BE-03 présentes, une LIGNE de
+     * liste émet administrative_status et auth_version, mais jamais
+     * suspended_at, réservé à la fiche (GOV-05 V1.1 §3).
+     */
+    public function test_list_row_never_emits_suspended_at_once_be03_columns_exist(): void
+    {
+        $user = (new User)->forceFill([
+            'id' => 8,
+            'name' => 'S. Test',
+            'email' => 's.test@example.test',
+            'administrative_status' => 'suspended',
+            'auth_version' => 2,
+            'suspended_at' => '2026-01-01 10:00:00',
+            'suspended_by' => 1,
+        ]);
+
+        $data = (new AdminUserResource($user))
+            ->toArray(HttpTestRequest::create('/api/admin/users'));
+
+        $this->assertSame(
+            ['id', 'nom', 'email', 'created_at', 'administrative_status', 'auth_version'],
+            array_keys($data)
+        );
+        $this->assertSame('suspended', $data['administrative_status']);
+        $this->assertSame(2, $data['auth_version']);
+    }
+
     public function test_resource_reveals_only_whitelisted_keys_without_be03_fields(): void
     {
         $user = (new User)->forceFill([
