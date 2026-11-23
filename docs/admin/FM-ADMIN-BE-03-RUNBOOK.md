@@ -18,7 +18,7 @@ Le code BE-03 est *fail-closed* : la barrière `client.active` et le login refus
    - fenêtre de maintenance annoncée ;
    - GO propriétaire ;
    - SHA exact à déployer, revu.
-2. **Migrations** (`2026_11_22_000001` à `000003`, puis BE-04 `2026_11_23_000001`), exécutées seules, avant tout changement de code. La migration BE-04 crée deux triggers : le compte de migration doit disposer du privilège `TRIGGER` (et, si la journalisation binaire est active, possiblement d'un privilège étendu ; à qualifier en OPS-02).
+2. **Migrations** (`2026_11_22_000001` à `000003`, puis BE-04 `2026_11_23_000001`), exécutées seules, avant tout changement de code. La migration BE-04 crée deux triggers : le compte de migration doit disposer du privilège `TRIGGER` (et, **mesuré sur MariaDB 10.11.19**, si la journalisation binaire est active : `SUPER` ou `log_bin_trust_function_creators=1`, sinon erreur 1419 ; même exigence pour le rollback `DROP TRIGGER` ; à qualifier sur LWS en OPS-02).
 3. **Vérification SQL** sur la cible :
    - les colonnes `users.administrative_status`, `auth_version`, `suspended_at`, `suspended_by` sont présentes ;
    - la contrainte `users_administrative_status_check` est présente ;

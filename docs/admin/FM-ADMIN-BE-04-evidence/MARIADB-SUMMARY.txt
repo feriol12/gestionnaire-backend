@@ -1,0 +1,53 @@
+BE-04 — qualification MariaDB 10.11 (extraits bruts, non retouchés)
+SHA exécuté : e0db55f04b796d44328865bb4ce85b2cdddae5cb (arbre propre)
+Image : docker.io/library/mariadb@sha256:e5fe75b2b9de0eb9f6f9a4d9c97272fb3a7480e389ccd487a786bab2a12cc0d7 (10.11.19, 2026-11-20)
+Isolation : conteneurs et réseau dédiés (label fm.mission=be04-qual), port 127.0.0.1 uniquement, données tmpfs, identifiants à usage unique détruits ; supprimés après exécution
+
+PHPUnit MariaDB 10.11.19 (log_bin=0) : Tests:    2 warnings, 2 skipped, 382 passed (2787 assertions)
+Banc run 1 (base recréée) : 178 PASS / 0 FAIL — evidence-10.11.19-MariaDB-ubu2204-20261123T001702-a9c18f.json
+Banc run 2 (base recréée) : 178 PASS / 0 FAIL — evidence-10.11.19-MariaDB-ubu2204-20261123T001734-4bd68a.json
+Banc run 3 (base recréée) : 178 PASS / 0 FAIL — evidence-10.11.19-MariaDB-ubu2204-20261123T001806-66f84e.json
+
+CREATE TRIGGER avec journalisation binaire (instance jetable séparée, log_bin=1, binlog_format=MIXED, utilisateur non-root avec ALL sur la base) :
+--- S1 : trust=0, sans SUPER (php artisan migrate)
+    858▕                 $this->getNameWithReadWriteType(),
+    859▕                 $query,
+    860▕                 $this->prepareBindings($bindings),
+    861▕                 $e,
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:650
+      PDOException::("SQLSTATE[HY000]: General error: 1419 You do not have the SUPER privilege and binary logging is enabled (you *might* want to use the less safe log_bin_trust_function_creators variable)")
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:650
+      PDO::exec("CREATE TRIGGER admin_audit_events_no_update BEFORE UPDATE ON admin_audit_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'admin_audit_events is append-only'")
+triggers=0
+pending BE-04 migration recorded=0
+audit table=1
+=== S2: log_bin_trust_function_creators=1 (GLOBAL, set by root), user without SUPER
+trust=ON
+  2026_11_23_000001_protect_admin_audit_events ........................................................... 4.13ms DONE
+triggers=2
+--- S2 rollback BE-04 (DROP TRIGGER) and replay
+   INFO  Rolling back migrations.
+  2026_11_23_000001_protect_admin_audit_events ........................................................... 7.31ms DONE
+triggers=0
+  2026_11_23_000001_protect_admin_audit_events ........................................................... 3.52ms DONE
+triggers=2
+=== S3: trust=0 restored, user granted SUPER (global)
+trust=OFF
+--- S3 rollback BE-04 then replay
+   INFO  Rolling back migrations.
+  2026_11_23_000001_protect_admin_audit_events ........................................................... 6.00ms DONE
+triggers=0
+  2026_11_23_000001_protect_admin_audit_events ........................................................... 3.81ms DONE
+triggers=2
+=== S4: SUPER revoked, trust=0: DROP TRIGGER (rollback) without SUPER
+   INFO  Rolling back migrations.
+  2026_11_23_000001_protect_admin_audit_events ........................................................... 4.24ms FAIL
+  SQLSTATE[HY000]: General error: 1419 You do not have the SUPER privilege and binary logging is enabled (you *might* want to use the less safe log_bin_trust_function_creators variable) (Connection: m
+      PDOException::("SQLSTATE[HY000]: General error: 1419 You do not have the SUPER privilege and binary logging is enabled (you *might* want to use the less safe log_bin_trust_function_creators vari
+triggers=2
+=== S5: append-only behaviour on the binlog instance (triggers reinstalled with trust=1 by user)
+   INFO  Nothing to migrate.
+triggers=2
+ERROR 1644 (45000) at line 1: admin_audit_events is append-only
+ERROR 1644 (45000) at line 1: admin_audit_events is append-only
+rows=1

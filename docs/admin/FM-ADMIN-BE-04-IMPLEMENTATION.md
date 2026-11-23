@@ -23,7 +23,7 @@
 **Moteurs :**
 - MySQL 8.4.3 : qualifié.
 - SQLite : triggers `RAISE(ABORT)`, vérifiés sur les bancs.
-- MariaDB 10.11 : même syntaxe `SIGNAL` que MySQL, **qualification non exécutée pour BE-04** (§5).
+- MariaDB 10.11.19 : **qualifié le 23/11/2026** sur `e0db55f` (Docker, image épinglée par digest), voir §5.
 - PostgreSQL : implémenté (fonction plpgsql et triggers), **non qualifié** (aucune instance de test autorisée).
 
 ## 2. Ce que les triggers garantissent, et ce qu'ils ne garantissent pas
@@ -49,7 +49,12 @@ Ces opérations ne peuvent être empêchées que par les **privilèges SQL**.
 | Compte **applicatif** (exécution) | `INSERT`, `SELECT` sur `admin_audit_events` | `DROP` (qui couvre aussi `TRUNCATE` sur MySQL et MariaDB), `ALTER`, `TRIGGER`. `UPDATE` et `DELETE` sont inutiles (refusés de toute façon) |
 
 - Avec un compte applicatif ainsi restreint, `TRUNCATE`, `DROP` et `DROP TRIGGER` deviennent impossibles à l'exécution. Seul un compte d'administration de la base pourrait encore altérer le journal.
-- **Journalisation binaire :** sur MySQL et MariaDB, lorsque la journalisation binaire est active, `CREATE TRIGGER` peut exiger un privilège étendu (par exemple `SUPER`), sauf si `log_bin_trust_function_creators=1`. **Non mesuré** ici (Docker indisponible, §5). À qualifier dans **OPS-02**, hors périmètre de ce GO.
+- **Journalisation binaire (mesuré sur MariaDB 10.11.19, `log_bin=1`, compte non-root ayant tous les droits sur la base) :**
+  - avec `log_bin_trust_function_creators=0` et sans `SUPER`, `CREATE TRIGGER` **échoue** (`1419 You do not have the SUPER privilege and binary logging is enabled`). La migration BE-04 n'est alors pas enregistrée et l'état reste cohérent : les tables BE-03 sont créées, aucun trigger, migration rejouable ;
+  - **`DROP TRIGGER` exige le même privilège** : sans `SUPER` (ou `log_bin_trust_function_creators=1`), le rollback BE-04 échoue aussi et les triggers restent en place ;
+  - deux remèdes mesurés : `log_bin_trust_function_creators=1` (réglage global du serveur, posé par un administrateur) ou `SUPER` accordé au compte de migration ; création, rollback et réapplication réussissent alors ;
+  - une fois installés, les triggers refusent UPDATE et DELETE de la même façon (`1644 (45000) admin_audit_events is append-only`).
+  Sur LWS, l'activation de la journalisation binaire et ces privilèges restent à qualifier en **OPS-02**.
 - **LWS :** sur un hébergement mutualisé, un seul compte disposant de tous les droits sur la base est courant. Dans ce cas, les triggers protègent contre les modifications ordinaires et les erreurs applicatives, **pas** contre un détenteur du compte qui exécuterait `TRUNCATE`, `DROP` ou `DROP TRIGGER`. Cette limite reste à arbitrer en OPS-02 : comptes séparés si LWS le permet, sinon procédures et sauvegardes.
 
 ## 4. Déploiement et rollback (non destructif, D4)
@@ -67,10 +72,12 @@ Ces opérations ne peuvent être empêchées que par les **privilèges SQL**.
 | Banc `tests/AdminSuspension`, MySQL 8.4.3 isolé | 178/178 (166 BE-03 + 12 BE-04) | `3b1fb21` |
 | Non-régression BE-01 / BE-02 / BE-06 (SQLite, copies isolées, `vendor` physique par copie) | Identique à `6b02e4d` : BE-01 0 échec ; BE-02 74 réussis / 1 échec (préexistant) ; BE-06 81/81 | `6b02e4d` contre `3b1fb21` |
 | Triggers SQLite (base jetable d'un banc) | INSERT accepté, UPDATE et DELETE refusés, ligne conservée | `3b1fb21` |
-| **MariaDB 10.11.19 (Docker)** | **NON EXÉCUTÉ.** Docker Desktop ne démarre pas (sockets orphelins dans `%LOCALAPPDATA%\Docker\run`) ; l'état interne de Docker n'a pas été modifié | — |
+| MariaDB 10.11.19 (Docker `mariadb@sha256:e5fe75b2…`), PHPUnit complet | 382 réussis, 0 échec, 2 ignorés, 2 avertissements | `e0db55f` |
+| MariaDB 10.11.19, banc `tests/AdminSuspension` | **178/178 aux 3 exécutions**, chacune sur une base recréée | `e0db55f` |
+| MariaDB 10.11.19 avec journalisation binaire (instance jetable séparée) | Mesures S1 à S5 ci-dessus (§3) | `e0db55f` |
 | PostgreSQL | **NON EXÉCUTÉ** (aucune instance autorisée) | — |
 
-Les preuves brutes sont dans `docs/admin/FM-ADMIN-BE-04-evidence/`.
+Les preuves brutes sont dans `docs/admin/FM-ADMIN-BE-04-evidence/` : `SUMMARY.txt` (MySQL, SQLite, non-régression), `MARIADB-SUMMARY.txt` (MariaDB, journalisation binaire) et un JSON par exécution du banc, chacun avec son SHA.
 
 Correspondance avec la matrice du préflight :
 
