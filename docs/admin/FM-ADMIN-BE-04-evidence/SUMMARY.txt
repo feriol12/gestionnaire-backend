@@ -1,3 +1,12 @@
+[ANNOTATION 23/11/2026 — OpenCode REVIEW-01, A-01. Le corps de ce fichier est conservé TEL QU'ÉCRIT
+ lors de l'exécution du 23/11/2026 sur 3b1fb21 ; seules les mentions [ANNOTATION] ont été ajoutées.]
+[CHRONOLOGIE : (1) 3b1fb21 — MySQL 8.4.3, SQLite et non-régression exécutés ; qualification MariaDB
+ IMPOSSIBLE (Docker Desktop en panne, voir la fin de ce fichier). (2) e0db55f (même code que 3b1fb21,
+ docs seulement entre les deux) — qualification MariaDB 10.11.19 effectuée ultérieurement : PHPUnit
+ 382 PASS déclarés, banc BE-03/BE-04 178/178 sur 3 exécutions (bases recréées).
+ Voir docs/admin/FM-ADMIN-BE-04-evidence/MARIADB-SUMMARY.txt et les journaux bruts dans
+ docs/admin/FM-ADMIN-BE-04-evidence/raw/ (niveau de preuve : raw/README.txt).]
+
 BE-04 — résumé des exécutions (extraits bruts, non retouchés)
 SHA exécuté : 3b1fb211c632354c144ec5981d9c39845beb2a4a
 Environnement : MySQL 8.4.3 local isolé (port dédié, datadir jetable) ; SQLite jetable ; données fictives
@@ -29,4 +38,6 @@ rows: 1
 
 MariaDB 10.11 (Docker) : NON EXÉCUTÉ — Docker Desktop ne démarre pas :
   backend : starting services: initializing Ingest server: listening on unix://…/Docker/run/sailor-ingest.sock: rename … sailor-ingest.sock.stale: Le système ne peut pas accéder au fichier.
+  [ANNOTATION A-01 : état AU MOMENT de cette exécution (3b1fb21), dépassé depuis — qualification MariaDB
+   10.11.19 réalisée ensuite sur e0db55f, voir MARIADB-SUMMARY.txt.]
 PostgreSQL : NON EXÉCUTÉ (aucune instance autorisée).

@@ -1,0 +1,181 @@
+Engine: 10.11.19-MariaDB-ubu2204 port 3306 database fm_admin_be03_test
+PASS T17 pre-BE-03 schema has no status column
+PASS T17 existing clients migrated active/v1
+PASS T17 finances untouched by migration
+PASS BE-04 append-only triggers installed by migration
+PASS T17 CHECK constraint rejects unknown status
+PASS T17 down() removes BE-03 schema
+PASS T17 rollback keeps finances
+PASS T17 re-migration idempotent
+PASS setup client A file login
+PASS setup client A database login
+PASS setup A file session works
+PASS setup A database session works
+PASS setup A PAT works
+PASS setup A has a database session row
+PASS T01 anonymous admin refused
+PASS T01 pre-MFA challenge session refused
+PASS T01 bearer refused on admin
+PASS T01 foreign origin refused
+PASS T01 missing CSRF refused (419)
+PASS T01 nothing changed
+PASS T02 valid grant but MFA proof older than 300 s refused
+PASS T02 reauthenticate
+PASS T02 reauth older than 300 s refused
+PASS T02 nothing changed
+PASS T03 reauthenticate
+PASS T03 empty reason ⇒ 422
+PASS T03 empty reason ⇒ no echo of submitted values
+PASS T03 reason > 2000 ⇒ 422
+PASS T03 reason > 2000 ⇒ no echo of submitted values
+PASS T03 missing confirm ⇒ 422
+PASS T03 missing confirm ⇒ no echo of submitted values
+PASS T03 confirm other case ⇒ 422
+PASS T03 confirm other case ⇒ no echo of submitted values
+PASS T03 confirm other account ⇒ 422
+PASS T03 confirm other account ⇒ no echo of submitted values
+PASS T03 unknown user ⇒ 404 USER_NOT_FOUND
+PASS F-05 BE-03 404 body is exactly {message, code}
+PASS F-05 BE-03 404 does not echo the submitted e-mail
+PASS F-05 BE-06 404 body
+PASS F-05 BE-06 404 no-store
+PASS F-05 BE-06 detail still requires the admin MFA grant (no 404 oracle)
+PASS T03 non-numeric id ⇒ 404
+PASS T03 nothing changed
+PASS T04 reauthenticate
+PASS T04 suspension 240 s after reauth ⇒ 200
+PASS T04 response keys exactly
+PASS T04 response values
+PASS T04 no-store
+PASS T04 reason never in response
+PASS T04 durable state
+PASS T04 PATs revoked, database sessions purged
+PASS T04 audit row
+PASS T04 outbox intention
+PASS T04 outbox carries no reason nor email
+PASS T04 finances preserved
+PASS BE-04 A01 UPDATE of the reason refused
+PASS BE-04 A01 table-wide UPDATE refused
+PASS BE-04 A02 DELETE of the row refused
+PASS BE-04 A02 table-wide DELETE refused
+PASS BE-04 A01/A02 audit row unchanged after refused statements
+PASS T06 existing file session refused
+PASS T06 existing database session refused
+PASS T06 file session closed after refusal
+PASS T07 revoked PAT refused
+PASS T07 PAT write refused
+PASS T06/T07 no financial write
+PASS T05 reauthenticate
+PASS T05 re-suspension ⇒ 409 ALREADY_SUSPENDED
+PASS T05 no business effect
+PASS T05 refusal traced without reason
+PASS T05 reactivating an active account ⇒ 409 ALREADY_ACTIVE
+PASS T05 active account untouched
+PASS A1 suspended login ⇒ generic 401
+PASS A1 no session after refused login
+PASS T09 forgot-password neutral
+PASS T09 no reset token issued for suspended
+PASS T09 valid token on suspended ⇒ same as invalid link
+PASS T09 password unchanged
+PASS T09 no access after reset attempt
+PASS T08 reauthenticate
+PASS T08 reactivation ⇒ 200 active
+PASS T08 version 3, suspension metadata cleared
+PASS T08 old file session still invalid
+PASS T08 old database session still invalid
+PASS T08 old PAT still invalid
+PASS T08 fresh login works
+PASS T08 fresh session works
+PASS T08 reactivation outbox
+PASS BE-06 detail now carries BE-03 fields
+PASS BE-06 list carries BE-03 fields
+PASS F-02 list rows never carry suspended_at (detail only)
+PASS S17/T14 detail: no finance, reason or suspended_by
+PASS S17/T14 list: no finance, reason or suspended_by
+PASS T14 admin and client share id 1
+PASS T14 admin cookie cannot read client finances
+PASS T14 client session cannot reach admin mutation
+PASS T14 B untouched
+PASS T12 reauthenticate (admin_audit_events)
+PASS T12 admin_audit_events failure ⇒ 500 TRANSITION_FAILED
+PASS T12 admin_audit_events failure ⇒ no SQL leaked
+PASS T12 admin_audit_events failure ⇒ full rollback
+PASS T12 reauthenticate (notification_outbox)
+PASS T12 notification_outbox failure ⇒ 500 TRANSITION_FAILED
+PASS T12 notification_outbox failure ⇒ no SQL leaked
+PASS T12 notification_outbox failure ⇒ full rollback
+PASS T12 B PAT still works
+PASS T10 B login
+PASS T10 reauthenticate
+PASS T10a in-flight write admitted first commits
+PASS T10a suspension waited for the write lock
+PASS T10a suspension then succeeds
+PASS T10a suspension started while the write held the lock
+PASS T10a write committed before the suspension completed
+PASS T10a exactly one new expense
+PASS T10a next write refused
+PASS T10a no further expense
+PASS T10b reauthenticate
+PASS T10b reactivate B
+PASS T10b B login
+PASS T10b reauthenticate
+PASS T10b suspension holding the lock succeeds
+PASS T10b concurrent write waited for the commit
+PASS T10b concurrent write refused after commit
+PASS T10b no expense written
+PASS T10c reauthenticate
+PASS T10c reactivate B
+PASS T10c reauthenticate
+PASS T10c suspension succeeds
+PASS T10c racing login waited and got the generic 401
+PASS T10c racing login left no usable session
+PASS T10d reauthenticate
+PASS T10d reactivate B
+PASS T10d reauthenticate
+PASS T10d suspension succeeds
+PASS T10d racing database-session login refused with the generic 401
+PASS T10d no usable database session
+PASS T11 reauthenticate second admin session
+PASS T11 reauthenticate
+PASS T11 simultaneous suspensions ⇒ one 200, one 409
+PASS T11 one transition, one event
+PASS T11 reauthenticate
+PASS T11 reauthenticate second
+PASS T11 reactivate vs suspend serialize coherently
+PASS T11 outbox matches successful transitions
+PASS T11 audit matches successful transitions
+PASS T13 every intention durable and pending
+PASS T13 one intention per successful transition
+PASS T13 intentions unique (dedup key)
+PASS T15 cached routes: suspended login still generic 401
+PASS T15 reauthenticate (cached routes)
+PASS T15 cached routes: suspend works
+PASS T15 cached routes: suspended D refused at login
+PASS F-04 reauthenticate
+PASS F-04 401 anonymous carries no-store, private
+PASS F-04 401 bearer carries no-store, private
+PASS F-04 403 origin carries no-store, private
+PASS F-04 419 csrf carries no-store, private
+PASS F-04 403 recent auth carries no-store, private
+PASS F-04 422 validation carries no-store, private
+PASS F-04 404 unknown user carries no-store, private
+PASS F-04 404 no route carries no-store, private
+PASS F-04 405 wrong verb carries no-store, private
+PASS F-04 409 redundant carries no-store, private
+PASS F-03 reauthenticate
+PASS F-03 ten requests admitted (422), then throttled
+PASS F-03 429 carries no-store, private
+PASS F-03 throttled requests had no effect
+PASS F-03 limiter window resets
+PASS S16 reason never logged
+PASS S20 no user deleted
+PASS S20 finances: only the admitted concurrent write was added
+PASS Q8 audit append-only: every row still present
+PASS BE-04 A12 triggers present before rollback
+PASS BE-04 A12 rollback drops only the triggers, every audit row kept
+PASS BE-04 A12 replay reinstalls the triggers, audit identical
+PASS BE-04 A12 UPDATE refused again after replay
+PASS BE-04 A12 finances unchanged by the BE-04 rollback/replay
+PASS BE-04 A13 limit observed: TRUNCATE bypasses row triggers (privileges required)
+
+178/178 checks passed — evidence: C:\PROJETS\GestionDepense\gestionnaire-backend-fm-admin-be-04/storage/app/admin-be03/runtime/evidence-10.11.19-MariaDB-ubu2204-20261123T001734-4bd68a.json

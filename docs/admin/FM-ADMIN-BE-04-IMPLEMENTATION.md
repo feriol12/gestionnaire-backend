@@ -28,8 +28,8 @@
 
 ## 2. Ce que les triggers garantissent, et ce qu'ils ne garantissent pas
 
-**Garanti (prouvé sur MySQL 8.4.3, et sur SQLite pour la partie base) :**
-- tout `UPDATE` ou `DELETE` d'une ligne de `admin_audit_events` échoue, **quel que soit le compte SQL** (root compris), et la ligne reste identique ;
+**Garanti (prouvé sur MySQL 8.4.3 et MariaDB 10.11.19, et sur SQLite pour la partie base) :**
+- tout `UPDATE` ou `DELETE` d'une ligne de `admin_audit_events` échoue et la ligne reste identique. Un trigger ne dépend pas du compte SQL qui exécute l'instruction ; c'est **attesté** avec le compte `root` sur MySQL 8.4.3 (banc) et avec un compte non-root ayant tous les droits sur la base sur MariaDB 10.11.19 (banc et instance avec journalisation binaire). Les autres comptes n'ont pas été testés individuellement ;
 - l'`INSERT` par l'écrivain unique fonctionne ;
 - le **rollback** d'une transition annulée retire bien sa ligne d'audit (un rollback InnoDB n'exécute pas de `DELETE`) ; l'atomicité BE-03 est intacte.
 
@@ -46,7 +46,7 @@ Ces opérations ne peuvent être empêchées que par les **privilèges SQL**.
 | Usage | Privilèges nécessaires | Privilèges à NE PAS accorder |
 |---|---|---|
 | Compte de **migration** (déploiement) | DDL sur la base, dont `TRIGGER` sur `admin_audit_events` (création et suppression des triggers) | — (compte à n'utiliser que pendant le déploiement) |
-| Compte **applicatif** (exécution) | `INSERT`, `SELECT` sur `admin_audit_events` | `DROP` (qui couvre aussi `TRUNCATE` sur MySQL et MariaDB), `ALTER`, `TRIGGER`. `UPDATE` et `DELETE` sont inutiles (refusés de toute façon) |
+| Compte **applicatif** (exécution) | **`INSERT` seulement** sur `admin_audit_events` (OpenCode A-02). BE-04 ne lit jamais le journal (test A09) | `SELECT`, **tant que BE-07 n'a pas défini ses besoins et son rôle de lecture** ; `DROP` (qui couvre aussi `TRUNCATE` sur MySQL et MariaDB) ; `ALTER` ; `TRIGGER`. `UPDATE` et `DELETE` sont inutiles (refusés de toute façon) |
 
 - Avec un compte applicatif ainsi restreint, `TRUNCATE`, `DROP` et `DROP TRIGGER` deviennent impossibles à l'exécution. Seul un compte d'administration de la base pourrait encore altérer le journal.
 - **Journalisation binaire (mesuré sur MariaDB 10.11.19, `log_bin=1`, compte non-root ayant tous les droits sur la base) :**
@@ -57,12 +57,36 @@ Ces opérations ne peuvent être empêchées que par les **privilèges SQL**.
   Sur LWS, l'activation de la journalisation binaire et ces privilèges restent à qualifier en **OPS-02**.
 - **LWS :** sur un hébergement mutualisé, un seul compte disposant de tous les droits sur la base est courant. Dans ce cas, les triggers protègent contre les modifications ordinaires et les erreurs applicatives, **pas** contre un détenteur du compte qui exécuterait `TRUNCATE`, `DROP` ou `DROP TRIGGER`. Cette limite reste à arbitrer en OPS-02 : comptes séparés si LWS le permet, sinon procédures et sauvegardes.
 
+### 3.1 `DEFINER` des triggers (OpenCode A-04)
+
+- Sur MySQL et MariaDB, chaque trigger est créé avec un `DEFINER` égal au compte qui exécute la migration. La migration ne précise pas de `DEFINER` ; elle hérite donc du compte de migration.
+- **Exigence d'exploitation :** ce compte doit rester **valide et stable** (même nom et même hôte), avec ses privilèges, tant que les triggers existent. Contrôle : `SELECT trigger_name, definer FROM information_schema.triggers WHERE event_object_table = 'admin_audit_events';`.
+- **Risque :** si ce compte est supprimé ou renommé, le déclenchement d'un trigger peut échouer avec l'erreur **1449** (« The user specified as a definer does not exist »). Comme les triggers ne portent que sur UPDATE et DELETE, l'INSERT de l'application ne devrait pas être concerné, mais le diagnostic devient trompeur. **Non mesuré ici.**
+- **Remède supervisé :** recréer les deux triggers avec un `DEFINER` valide, dans une fenêtre de maintenance, par un administrateur. Cela suppose une procédure distincte, à arbitrer, la migration BE-04 n'étant pas modifiée.
+- La qualification réelle (compte de migration sur LWS, effet d'une suppression du `DEFINER`) relève d'**OPS-02**.
+
 ## 4. Déploiement et rollback (non destructif, D4)
 
 - **Ordre :** la migration BE-04 suit les migrations BE-03 (runbook BE-03, §2). Le code BE-04 n'a pas besoin des triggers pour fonctionner, et le code BE-03 (`6b02e4d`), qui n'écrit qu'en INSERT, reste compatible avec les triggers.
 - **Rollback de la migration BE-04 :** `php artisan migrate:rollback --step=1`, à condition que BE-04 soit la dernière migration appliquée. Il supprime **uniquement les deux triggers** ; aucune ligne d'audit n'est touchée (prouvé, A12 : empreinte du journal identique avant et après rollback puis réapplication). Après un rollback, le journal redevient modifiable : à éviter hors incident.
 - **Interdit (Q8, D4) :** revenir en arrière sur `2026_11_22_000002_create_admin_audit_events_table` (sa méthode `down()` supprime la table). Aucune purge automatique n'existe, ni BE-03 ni BE-04.
 - **Rollback du code seul :** possible vers `6b02e4d`, sans effet sur le journal.
+
+### 4.1 DDL partiellement appliquée : un seul trigger installé (OpenCode A-03)
+
+`up()` crée les deux triggers l'un après l'autre. Sur MySQL et MariaDB, chaque `CREATE TRIGGER` est validé implicitement : si le second échoue (privilège, journalisation binaire, coupure), le premier reste en place. La migration n'est **pas** enregistrée dans `migrations`, et un simple `migrate` rejoué échouera sur le trigger déjà présent (« Trigger already exists »). **Scénario documenté, non reproduit en test.**
+
+1. **Diagnostic, sans rien modifier :**
+   - `SELECT trigger_name, event_manipulation, definer FROM information_schema.triggers WHERE event_object_schema = DATABASE() AND event_object_table = 'admin_audit_events';` : attendu 0 ou 2 lignes ; 1 ligne signifie un état partiel ;
+   - `SELECT migration, batch FROM migrations WHERE migration = '2026_11_23_000001_protect_admin_audit_events';` : absente en cas d'échec ;
+   - le journal du déploiement (code d'erreur, par exemple `1419`).
+2. **Ne pas** supprimer le trigger déjà installé pour « repartir propre » : cela ouvrirait une fenêtre sans protection. La migration ne fait volontairement aucun `DROP TRIGGER` préventif.
+3. **Reprise supervisée** (administrateur de la base, fenêtre de maintenance, sauvegarde préalable) :
+   - corriger la cause (privilège, réglage de journalisation binaire, connexion) ;
+   - créer **uniquement le trigger manquant** avec l'instruction exacte de la migration ;
+   - vérifier que les 2 triggers sont présents et que la protection est effective (un UPDATE de test est refusé ; à faire sur une copie si possible) ;
+   - enregistrer la migration dans `migrations`, au lot suivant, pour aligner l'état Laravel.
+4. Toute évolution du mécanisme de migration (idempotence, `DROP` préventif, transaction de DDL) exige un **arbitrage séparé** ; BE-04 ne la change pas.
 
 ## 5. Validation
 
@@ -77,7 +101,20 @@ Ces opérations ne peuvent être empêchées que par les **privilèges SQL**.
 | MariaDB 10.11.19 avec journalisation binaire (instance jetable séparée) | Mesures S1 à S5 ci-dessus (§3) | `e0db55f` |
 | PostgreSQL | **NON EXÉCUTÉ** (aucune instance autorisée) | — |
 
-Les preuves brutes sont dans `docs/admin/FM-ADMIN-BE-04-evidence/` : `SUMMARY.txt` (MySQL, SQLite, non-régression), `MARIADB-SUMMARY.txt` (MariaDB, journalisation binaire) et un JSON par exécution du banc, chacun avec son SHA.
+Les preuves sont dans `docs/admin/FM-ADMIN-BE-04-evidence/` :
+- `SUMMARY.txt` : exécution sur `3b1fb21`, annotée (A-01) ;
+- `MARIADB-SUMMARY.txt` : MariaDB et journalisation binaire ;
+- un JSON par exécution du banc, chacun avec son SHA ;
+- `raw/` : journaux bruts d'époque, archivés pour A-05 et A-06.
+
+**Niveaux de preuve** (détail dans `raw/README.txt`) :
+- **attesté par un artefact lié au SHA** : les JSON du banc ;
+- **attesté par un journal brut d'époque** : les sorties PHPUnit complètes (MySQL 8.4.3 et MariaDB 10.11.19), les sorties du banc et la sonde SQLite ;
+- **extrait seulement** : la non-régression BE-01/BE-02/BE-06 ; les journaux complets de ces bancs n'ont pas été conservés et ne sont pas reconstitués ;
+- **déclaré avec la sortie capturée** : les mesures S1 à S5 de journalisation binaire ;
+- **non exécuté** : PostgreSQL et LWS.
+
+Rien de tout cela n'a été rejoué par un relecteur ni confirmé par la CI GitHub (aucune publication).
 
 Correspondance avec la matrice du préflight :
 

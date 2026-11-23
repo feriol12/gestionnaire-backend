@@ -1,0 +1,14 @@
+##### base 6b02e4d own-autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-06 TOTAL 81 FAILED 0
+sqlite triggers in BE-06 db: 
+##### new 3b1fb21 own-autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes 
+BE-06 TOTAL 81 FAILED 0
+sqlite triggers in BE-06 db: admin_audit_events_no_update,admin_audit_events_no_delete
