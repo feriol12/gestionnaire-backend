@@ -1,0 +1,580 @@
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true
+
+   PASS  Tests\Unit\LwsPublicEntrypointTest
+  ✓ the webroot artifact contains only the entrypoint and htaccess                                               0.03s  
+  ✓ the local entrypoint keeps the stock laravel layout
+  ✓ the entrypoint is valid php without stock relative paths
+  ✓ the production artifact targets the approved absolute private root
+  ✓ the private root is not derived from the entrypoint location
+  ✓ the private root never comes from request or environment input
+  ✓ it boots the private application and never the webroot or stock paths                                        0.15s  
+  ✓ the real lws htdocs alias reaches the same private root from both names                                      0.17s  
+  ✓ maintenance mode is read from the private storage                                                            0.20s  
+  ✓ private maintenance runs without either bootstrap dependency                                                 0.12s  
+  ✓ a missing private application fails without exposing any path                                                0.08s  
+  ✓ an absent private root fails without exposing any path                                                       0.07s  
+  ✓ htaccess is exactly the configuration validated on real lws
+  ✓ the local htaccess keeps the stock laravel rules
+  ✓ htaccess adds no php handler or permissive directives
+
+   PASS  Tests\Unit\TestDatabaseSafetyTest
+  ✓ configuration safety matches expected decision with data set "testing/mysql/gestionnaire test -> accept"     0.01s  
+  ✓ configuration safety matches expected decision with data set "testing/mysql/gestionnaire depense -> refuse"
+  ✓ configuration safety matches expected decision with data set "testing/pgsql/postgres -> refuse"
+  ✓ configuration safety matches expected decision with data set "testing/pgsql/moneva auth v3 test -> accept"
+  ✓ configuration safety matches expected decision with data set "testing/sqlite/:memory: -> refuse (driver not allowed)"
+  ✓ configuration safety matches expected decision with data set "local/mysql/gestionnaire test -> refuse (env not allowed)"
+  ✓ configuration safety matches expected decision with data set "testing/mysql/moneva security test -> accept"
+  ✓ configuration safety matches expected decision with data set "testing/mysql/production test backup -> refuse (naming convention)"
+  ✓ configuration safety matches expected decision with data set "testing/mysql/gestionnaire test + non-empty d a t a b a s e u r l -> refuse (fail closed)"
+  ✓ configuration safety matches expected decision with data set " f-02.1: leading and trailing spaces around a safe name -> refuse"
+  ✓ configuration safety matches expected decision with data set " f-02.2: trailing space only after a safe name -> refuse"
+  ✓ configuration safety matches expected decision with data set " f-02.3: trailing newline after a safe name -> refuse"
+  ✓ configuration safety matches expected decision with data set " f-02.4: leading newline before a safe name -> refuse"
+  ✓ configuration safety matches expected decision with data set " f-02.5: connection u r l of a single space -> refuse"
+  ✓ configuration safety matches expected decision with data set " f-02.6: connection u r l of a tab -> refuse"
+  ✓ configuration safety matches expected decision with data set " f-02.7: connection u r l of a newline -> refuse"
+  ✓ configuration safety matches expected decision with data set " f-02.8: empty-string connection u r l -> accept when everything else is safe"
+  ✓ configuration safety matches expected decision with data set " f-02.9: null connection u r l -> accept when everything else is safe"
+  ✓ guard throws for the real development database
+  ✓ guard does not throw for an explicit test database
+  ✓ guard fails closed on non empty connection url even if otherwise valid
+  ✓ bare test suffix without prefix is refused
+  ✓ database name is not trimmed before validation
+  ✓ connection url is not trimmed before validation
+
+   WARN  Tests\Unit\WorkerLockTest
+  ✓ a free lock is acquired and created without content                                                          0.02s  
+  ✓ a second independent holder gets busy never acquired                                                         0.01s  
+  ✓ the lock is acquirable again after release
+  ✓ the lock file is never truncated
+  ! a missing directory is an error not busy → fopen(<TEMP>/be06c-lock-77f5451196ce/… 0.01s  
+  ! a directory in place of the lock file is an error → fopen(<TEMP>/be06c-lock-0ded… 0.01s  
+  - a symbolic link lock path is refused → Symbolic links require elevated privileges on Windows; covered on Li… 0.01s  
+  ✓ acquiring twice on the same instance is a programming error
+  ✓ release without holding is harmless
+
+   PASS  Tests\Feature\AdminAuditBoundaryTest
+  ✓ admin audit log is the only application code touching the table                                              0.29s  
+  ✓ no route exposes the audit log                                                                               0.03s  
+  ✓ only the two approved outcomes are accepted                                                                  0.02s  
+  ✓ a refusal never carries a reason                                                                             0.02s  
+  ✓ the audit cannot be written outside a transaction                                                            0.04s  
+  ✓ no scheduled or console purge exists                                                                         0.09s  
+
+   PASS  Tests\Feature\AdminAuditImmutabilityTest
+  ✓ insert through the single writer is allowed                                                                  0.46s  
+  ✓ update is refused and leaves the row untouched                                                               0.06s  
+  ✓ delete is refused and keeps every row                                                                        0.07s  
+  ✓ a rolled back transition leaves no audit row                                                                 0.08s  
+  ✓ triggers are installed for update and delete                                                                 0.06s  
+  ✓ no tracking column was added                                                                                 0.06s  
+
+   PASS  Tests\Feature\Admin\AdminUserNotFoundTest
+  ✓ unknown user returns the generic message and stable code                                                     0.20s  
+
+   PASS  Tests\Feature\Admin\AdminUserShowTest
+  ✓ detail omits be03 fields when columns are absent                                                             0.04s  
+  ✓ detail exposes null when be03 columns exist but are null                                                     0.03s  
+  ✓ detail exposes values when be03 columns are filled                                                           0.05s  
+
+   PASS  Tests\Feature\Admin\AdminUsersIndexTest
+  ✓ pagination parameters accept defaults and bounds                                                             0.07s  
+  ✓ pagination parameters reject out of bounds and non integer                                                   0.03s  
+  ✓ list row never emits suspended at once be03 columns exist                                                    0.03s  
+  ✓ resource reveals only whitelisted keys without be03 fields                                                   0.05s  
+
+   PASS  Tests\Feature\AuthHardeningTest
+  ✓ login with an array password is a validation error not a crash                                               0.14s  
+  ✓ register with an array password is a validation error not a crash                                            0.07s  
+  ✓ string passwords keep the current register and login behavior                                                0.12s  
+  ✓ login is throttled on the sixth attempt for the same ip and email                                            1.15s  
+  ✓ login buckets are independent per email and per ip                                                           1.20s  
+  ✓ malformed emails never crash the login limiter                                                               0.05s  
+  ✓ register is throttled separately from login                                                                  0.08s  
+  ✓ malformed emails never crash the register limiter                                                            0.05s  
+  ✓ dedicated limiters only apply to their routes and crud keeps the generic limiter                             0.17s  
+  ✓ user endpoint is denied after more than 1440 minutes of inactivity                                           0.09s  
+  ✓ user endpoint is allowed at exactly 1440 minutes of inactivity                                               0.07s  
+  ✓ logout still revokes an inactive token                                                                       0.09s  
+
+   PASS  Tests\Feature\BudgetOwnershipTest
+  ✓ show foreign and missing budget are indistinguishable                                                        0.10s  
+  ✓ update foreign and missing budget are indistinguishable and foreign is untouched                             0.11s  
+  ✓ delete foreign and missing budget are indistinguishable and foreign survives                                 0.08s  
+  ✓ owner keeps the existing show update and delete behavior                                                     0.09s  
+
+   PASS  Tests\Feature\CacheSerializationTest
+  ✓ object deserialization is disabled in effective config                                                       0.02s  
+  ✓ file store keeps scalars and arrays but never rebuilds objects                                               0.03s  
+  ✓ rate limiter still works on a file store                                                                     0.04s  
+
+   PASS  Tests\Feature\ClientSessionPurgerTest
+  ✓ non database driver purges nothing                                                                           0.07s  
+  ✓ default connection purge is part of the transition transaction                                               0.06s  
+  ✓ explicit session connection is purged on that connection after commit                                        0.09s  
+  ✓ session connection purge is skipped when the transition rolls back                                           0.05s  
+
+   PASS  Tests\Feature\ClientSuspensionBarrierTest
+  ✓ every authenticated client route runs the barrier before activity and business                               0.06s  
+  ✓ suspension refuses an existing file session                                                                  0.16s  
+  ✓ suspension refuses an existing database session                                                              0.19s  
+  ✓ a revoked pat is refused after suspension                                                                    0.10s  
+  ✓ the status barrier alone refuses a still existing pat and burns it                                           0.08s  
+  ✓ pat revocation targets the exact morph type and id                                                           0.10s  
+  ✓ reactivation never resurrects old sessions or pats                                                           0.18s  
+  ✓ a session without bound version is refused                                                                   0.09s  
+  ✓ suspended login gets the generic 401 without any session                                                     0.75s  
+  ✓ client payloads never expose administrative metadata                                                         0.10s  
+  ✓ no reset link is issued for a suspended account                                                              0.28s  
+  ✓ a valid reset token has no effect on a suspended account                                                     0.34s  
+  ✓ reset still works for an active account                                                                      0.09s  
+  ✓ the write gate runs the action under the user row lock                                                       0.06s  
+  ✓ the write gate rejects a suspension committed after the barrier                                              0.07s  
+  ✓ the write gate rejects an intervening suspend and reactivate                                                 0.07s  
+  ✓ reads are not locked by the write gate                                                                       0.06s  
+  ✓ budget and expense mutations are refused without effect once suspended                                       0.11s  
+  ✓ migration defaults and status constraint                                                                     0.07s  
+  ✓ status columns are not mass assignable                                                                       0.04s  
+  ✓ gate is fail closed on missing status                                                                        0.05s  
+
+   PASS  Tests\Feature\DatabaseSessionStoreTest
+  ✓ the sessions migration creates the standard laravel table                                                    0.07s  
+  ✓ the database driver uses the default connection and the sessions table                                       0.04s  
+  ✓ login persists the authenticated session in the database                                                     0.11s  
+  ✓ an authenticated follow up request is served from the database row                                           0.15s  
+  ✓ last activity is updated on later requests                                                                   0.10s  
+  ✓ login regenerates the session id and the pre login id stays anonymous                                        0.09s  
+  ✓ logout destroys the database session and the old cookie is useless                                           0.11s  
+  ✓ a password change keeps the current session and closes the other one                                         0.18s  
+  ✓ a password reset closes every stored session                                                                 0.17s  
+  ✓ a stored session older than the lifetime is not authenticated                                                0.10s  
+
+   PASS  Tests\Feature\DatabaseTimezoneConfigTest
+  ✓ application timezone stays utc                                                                               0.02s  
+  ✓ mysql connection pins the session timezone to utc                                                            0.02s  
+  ✓ the value is a literal of the config file and survives config cache                                          0.02s  
+  ✓ the mysql connector sets the session timezone on connect                                                     0.04s  
+
+   PASS  Tests\Feature\DatabaseTimezoneSessionTest
+  ✓ the session timezone of the mysql connection is utc                                                          0.05s  
+  ✓ a utc timestamp inside the european dst gap is stored unchanged                                              0.05s  
+
+   PASS  Tests\Feature\EmailVerificationTest
+  ✓ registration sends one verification email without logging in                                                 0.17s  
+  ✓ a verification queue failure does not turn a created account into an error                                   0.36s  
+  ✓ correct password on an unverified account is refused without a session                                       0.30s  
+  ✓ wrong password on an unverified account keeps the invalid credentials contract                               0.69s  
+  ✓ a verified account logs in normally and reaches business routes                                              0.14s  
+  ✓ a valid signed link verifies the email without logging in                                                    0.08s  
+  ✓ tampered links are rejected                                                                                  0.07s  
+  ✓ a signed link for a previous email address is rejected                                                       0.07s  
+  ✓ an expired link is rejected                                                                                  0.05s  
+  ✓ reusing a valid link is an idempotent success                                                                0.08s  
+  ✓ the link works from a browser with another users session without switching identity                          0.12s  
+  ✓ the verification link has a modest dedicated limiter                                                         0.13s  
+  ✓ resend response is identical for unverified unknown and verified emails                                      0.78s  
+  ✓ resend validates the email format only                                                                       0.06s  
+  ✓ resend requires the csrf token for the spa                                                                   0.07s  
+  ✓ resend limiter does not reveal account existence                                                             1.38s  
+  ✓ a legacy unverified session keeps identity and logout but no business access                                 0.12s  
+  ✓ every authenticated business route requires a verified email                                                 0.06s  
+  ✓ public verification routes are not behind auth                                                               0.06s  
+  ✓ password reset does not verify the email                                                                     0.30s  
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application root is not a resource                                                                       0.14s  
+
+   PASS  Tests\Feature\ExpenseCategoryTest
+  ✓ user can create an expense with beaute et soins                                                              0.10s  
+  ✓ persisted category is byte identical                                                                         0.07s  
+  ✓ user can update an expense to beaute et soins                                                                0.08s  
+  ✓ unknown category is rejected                                                                                 0.10s  
+  ✓ existing categories are still accepted                                                                       0.16s  
+  ✓ expense list serializes category unchanged                                                                   0.08s  
+  ✓ dashboard categories groups beaute et soins                                                                  0.08s  
+  ✓ recent transactions return category unchanged                                                                0.07s  
+
+   PASS  Tests\Feature\ExportSecurityTest
+  ✓ expense export failure returns a generic error and reports it                                                0.05s  
+  ✓ budget export failure returns a generic error and reports it                                                 0.07s  
+  ✓ expense export escapes user values and still produces a pdf                                                  0.39s  
+  ✓ budget export escapes user values and still produces a pdf                                                   0.20s  
+  ✓ dompdf remote content and php execution stay disabled                                                        0.05s  
+  ✓ annual budget export contains only own budgets of the current year                                           0.25s  
+  ✓ annual budget export of a year without budgets is an empty valid pdf                                         0.25s  
+  ✓ monthly budget export is unchanged                                                                           0.23s  
+
+   PASS  Tests\Feature\HealthEndpointTest
+  ✓ up returns the exact json status                                                                             0.03s  
+  ✓ up answers head with an empty body                                                                           0.02s  
+  ✓ up stays json when html is requested                                                                         0.02s  
+  ✓ up does not depend on the session database                                                                   2.05s  
+  ✓ up carries the global security headers                                                                       0.04s  
+  ✓ up does not bypass maintenance mode                                                                          0.05s  
+  ✓ root is not found and discloses nothing                                                                      0.03s  
+  ✓ root answers head with not found                                                                             0.02s  
+  ✓ root does not depend on the session database                                                                 2.05s  
+  ✓ the views directory survives the welcome removal for view cache                                              0.31s  
+
+   PASS  Tests\Feature\InactivityBoundaryTest
+  ✓ 1439 minutes of inactivity keeps the session active                                                          0.08s  
+  ✓ exactly 1440 minutes of inactivity keeps the session active                                                  0.09s  
+  ✓ 1441 minutes of inactivity revokes the current token                                                         0.07s  
+  ✓ expiry only revokes the token used for the request                                                           0.07s  
+
+   PASS  Tests\Feature\MailConfigurationTest
+  ✓ the smtp mailer exposes only the explicit model                                                              0.02s  
+  ✓ environment values map to the smtp and sender config                                                         0.02s  
+  ✓ mail scheme null string means no explicit scheme                                                             0.02s  
+  ✓ production like smtps transport uses implicit tls without connecting                                         0.04s  
+  ✓ explicit scheme host and port suffice without mail url                                                       0.02s  
+  ✓ legacy mail encryption no longer controls the transport                                                      0.02s  
+  ✓ timeout defaults to twenty seconds and is configurable                                                       0.03s  
+  ✓ local mailpit transport stays plain smtp                                                                     0.02s  
+  ✓ ehlo domain defaults to the app url host and can be overridden                                               0.02s  
+  ✓ mail configuration survives a config cache round trip                                                        0.03s  
+
+   PASS  Tests\Feature\PasswordRecoveryTest
+  ✓ forgot password public response is identical for known and unknown emails                                    1.18s  
+  ✓ reset link points to the spa with token and email                                                            0.53s  
+  ✓ forgot password validates the email format only                                                              0.05s  
+  ✓ valid token resets the password without logging in or creating tokens                                        0.36s  
+  ✓ invalid expired reused and mismatched tokens get the same safe rejection                                     0.82s  
+  ✓ reset keeps the current password rules                                                                       0.08s  
+  ✓ recovery endpoints require the csrf token for the spa                                                        0.07s  
+  ✓ dedicated limiters throttle recovery the same way for known and unknown emails                               2.44s  
+  ✓ recovery routes are public and use dedicated limiters                                                        0.06s  
+  ✓ policy after reset closes browser sessions and revokes personal access tokens                                0.17s  
+
+   PASS  Tests\Feature\PasswordResetRetrySafetyTest
+  ✓ t01 first attempt with a recent token keeps the deduplication                                                0.28s  
+  ✓ t02 t05 t06 retry inside the throttle is released then the third attempt sends a new link                    0.60s  
+  ✓ t03 the release delay comes from the resolved default broker                                                 0.32s  
+  ✓ t04 a throttle other than sixty is honoured                                                                  0.56s  
+  ✓ t07 t08 t21 last attempt still throttled fails visibly and is never retried again                            0.67s  
+  ✓ t09 an unexpected broker status is a bounded terminal failure                                                0.08s  
+  ✓ t15 invalid user ends neutrally                                                                              0.07s  
+  ✓ t10 failure branches never look successful without a queue job                                               0.06s  
+  ✓ t10 throttled without a queue job is only the first attempt deduplication                                    0.27s  
+  ✓ invalid broker configuration is refused without sending                                                      0.09s  
+  ✓ t17 t18 t19 queue contract is unchanged                                                                      0.05s  
+
+   PASS  Tests\Feature\PasswordSessionSecurityTest
+  ✓ a password change keeps the current session and closes the other ones                                        0.40s  
+  ✓ a password change rotates the remember token and kills old recallers                                         0.12s  
+  ✓ a password change revokes only the owners personal access tokens                                             0.11s  
+  ✓ a personal access token cannot change the password                                                           0.08s  
+  ✓ a legacy unverified session can still secure its account                                                     0.10s  
+  ✓ a wrong current password changes nothing                                                                     0.10s  
+  ✓ invalid new passwords are validation errors without side effects                                             0.14s  
+  ✓ an unauthenticated password change is refused                                                                0.05s  
+  ✓ a password change requires the csrf token                                                                    0.08s  
+  ✓ password change attempts are rate limited per account                                                        0.17s  
+  ✓ the password route is account security not business                                                          0.05s  
+  ✓ a password reset closes every session and revokes only the owners tokens                                     0.36s  
+  ✓ a password reset of an unverified account revokes tokens without verifying it                                0.31s  
+  ✓ a failed reset revokes nothing                                                                               0.33s  
+
+   PASS  Tests\Feature\PreauthMailQueueTest
+  ✓ forgot known and unknown get the same response and each queue one job                                        0.49s  
+  ✓ the forgot request itself creates no token and sends nothing                                                 0.27s  
+  ✓ jobs use the database connection even when the default is sync                                               0.51s  
+  ✓ the public request runs inside the native timebox                                                            0.08s  
+  ✓ the worker creates the token and sends a valid reset link                                                    0.53s  
+  ✓ null or missing user jobs do nothing                                                                         0.07s  
+  ✓ duplicate requests respect the broker throttle                                                               0.97s  
+  ✓ a mail failure removes the unsent token so the retry can send a valid link                                   1.60s  
+  ✓ a mail failure through the real queue releases the job for retry                                             1.41s  
+  ✓ resend gets the same response and queues one job in every case                                               0.72s  
+  ✓ the worker sends only to an existing unverified account                                                      0.76s  
+  ✓ eligibility is checked again when the job runs                                                               0.30s  
+  ✓ the link sent by the worker verifies without logging in                                                      0.31s  
+  ✓ limiters are unchanged and a throttled request queues nothing                                                1.34s  
+  ✓ a queue insert failure keeps the public response neutral                                                     1.15s  
+  ✓ queued payloads carry only the user id                                                                       0.71s  
+queue-ops-log-failure event=INVOCATION_START run_id=e4dc60bf9e09f408
+queue-ops-log-failure event=CONFIG_INVALID run_id=e4dc60bf9e09f408
+queue-ops-log-failure event=INVOCATION_END run_id=e4dc60bf9e09f408
+queue-ops-log-failure event=INVOCATION_START run_id=fb6a52744519e9ae
+queue-ops-log-failure event=CONFIG_INVALID run_id=fb6a52744519e9ae
+queue-ops-log-failure event=INVOCATION_END run_id=fb6a52744519e9ae
+queue-ops-log-failure event=INVOCATION_START run_id=553815fdb31e2054
+queue-ops-log-failure event=CONFIG_INVALID run_id=553815fdb31e2054
+queue-ops-log-failure event=INVOCATION_END run_id=553815fdb31e2054
+
+   PASS  Tests\Feature\QueueDrainResumeTest
+  ✓ drain publishes the gate then proves quiescence and releases the lock                                        0.07s  
+  ✓ drain times out safely while a worker holds the lock                                                         0.06s  
+  ✓ drain is idempotent and keeps the original pause time                                                        0.06s  
+  ✓ drain with a missing or invalid wait publishes nothing                                                       0.06s  
+  ✓ drain with invalid configuration publishes nothing                                                           0.04s  
+  ✓ a lock error during drain is never success and the queue stays paused                                        0.08s  
+  ✓ a gate that cannot be published throws and is never success                                                  0.07s  
+  ✓ a gate that vanishes before quiescence is proven fails with 74                                               0.09s  
+  ✓ after a successful drain workers skip until explicit resume                                                  1.10s  
+  ✓ resume removes the gate                                                                                      0.07s  
+  ✓ resume without a gate is harmless                                                                            0.06s  
+  ✓ a failed removal is reported as failure and the queue stays paused                                           0.07s  
+  ✓ resume with invalid configuration changes nothing                                                            0.04s  
+  ✓ b1 resume never reports success on an indeterminate state                                                    0.07s  
+  ✓ b1 drain never proves quiescence on an indeterminate state                                                   0.07s  
+  ✓ drain wait values beyond the representable bound are rejected                                                0.06s  
+
+   PASS  Tests\Feature\QueueJobsRetryPolicyTest
+  ✓ every concrete queued job declares its own retry policy and connection                                       0.03s  
+
+   PASS  Tests\Feature\QueueStatusCommandTest
+  ✓ a quiet installation is reported as free and not paused                                                      0.04s  
+  ✓ paused and busy states are reported                                                                          0.06s  
+  ✓ no lock probe leaves the lock untouched                                                                      0.07s  
+  ✓ a start without an end is listed as an unmatched run                                                         1.13s  
+  ✓ cron output size is reported and alerts above the threshold                                                  0.13s  
+  ✓ status never prints credentials                                                                              0.08s  
+  ✓ invalid configuration is reported with exit 2                                                                0.07s  
+  ✓ human readable output is available                                                                           0.08s  
+  ✓ b1 status reports an indeterminate pause state with 74                                                       0.05s  
+  ✓ missing log files are reported as degraded observability                                                     0.07s  
+  ✓ worker numeric configuration is reported separately                                                          0.06s  
+queue-ops-log-failure event=INVOCATION_START run_id=47aaaff380a9b8c1
+queue-ops-log-failure event=CONFIG_INVALID run_id=47aaaff380a9b8c1
+queue-ops-log-failure event=INVOCATION_END run_id=47aaaff380a9b8c1
+queue-ops-log-failure event=INVOCATION_START run_id=12be82c65b8d66d6
+queue-ops-log-failure event=CONFIG_INVALID run_id=12be82c65b8d66d6
+queue-ops-log-failure event=INVOCATION_END run_id=12be82c65b8d66d6
+queue-ops-log-failure event=INVOCATION_START run_id=0013ffb48cd44cc0
+queue-ops-log-failure event=CONFIG_INVALID run_id=0013ffb48cd44cc0
+queue-ops-log-failure event=INVOCATION_END run_id=0013ffb48cd44cc0
+queue-ops-log-failure event=INVOCATION_START run_id=ece35777eac940ba
+queue-ops-log-failure event=CONFIG_INVALID run_id=ece35777eac940ba
+queue-ops-log-failure event=INVOCATION_END run_id=ece35777eac940ba
+queue-ops-log-failure event=INVOCATION_START run_id=b33528595843c6b5
+queue-ops-log-failure event=CONFIG_INVALID run_id=b33528595843c6b5
+queue-ops-log-failure event=INVOCATION_END run_id=b33528595843c6b5
+queue-ops-log-failure event=INVOCATION_START run_id=8d2fe9e2750cff19
+queue-ops-log-failure event=CONFIG_INVALID run_id=8d2fe9e2750cff19
+queue-ops-log-failure event=INVOCATION_END run_id=8d2fe9e2750cff19
+queue-ops-log-failure event=INVOCATION_START run_id=565f3865f22a9e06
+queue-ops-log-failure event=CONFIG_INVALID run_id=565f3865f22a9e06
+queue-ops-log-failure event=INVOCATION_END run_id=565f3865f22a9e06
+queue-ops-log-failure event=INVOCATION_START run_id=e427e58ee0d78ea8
+queue-ops-log-failure event=CONFIG_INVALID run_id=e427e58ee0d78ea8
+queue-ops-log-failure event=INVOCATION_END run_id=e427e58ee0d78ea8
+queue-ops-log-failure event=INVOCATION_START run_id=b4552e3e0b5360e7
+queue-ops-log-failure event=CONFIG_INVALID run_id=b4552e3e0b5360e7
+queue-ops-log-failure event=INVOCATION_END run_id=b4552e3e0b5360e7
+queue-ops-log-failure event=INVOCATION_START run_id=b3d8a7da83055745
+queue-ops-log-failure event=CONFIG_INVALID run_id=b3d8a7da83055745
+queue-ops-log-failure event=INVOCATION_END run_id=b3d8a7da83055745
+queue-ops-log-failure event=INVOCATION_START run_id=f954c6e75700cdf5
+queue-ops-log-failure event=CONFIG_INVALID run_id=f954c6e75700cdf5
+queue-ops-log-failure event=INVOCATION_END run_id=f954c6e75700cdf5
+queue-ops-log-failure event=INVOCATION_START run_id=2895da375dff07cb
+queue-ops-log-failure event=CONFIG_INVALID run_id=2895da375dff07cb
+queue-ops-log-failure event=INVOCATION_END run_id=2895da375dff07cb
+queue-ops-log-failure event=INVOCATION_START run_id=3d1b57f202f37779
+queue-ops-log-failure event=CONFIG_INVALID run_id=3d1b57f202f37779
+queue-ops-log-failure event=INVOCATION_END run_id=3d1b57f202f37779
+queue-ops-log-failure event=INVOCATION_START run_id=43818fdb65681819
+queue-ops-log-failure event=CONFIG_INVALID run_id=43818fdb65681819
+queue-ops-log-failure event=INVOCATION_END run_id=43818fdb65681819
+queue-ops-log-failure event=INVOCATION_START run_id=2fd7e28733e3e627
+queue-ops-log-failure event=CONFIG_INVALID run_id=2fd7e28733e3e627
+queue-ops-log-failure event=INVOCATION_END run_id=2fd7e28733e3e627
+queue-ops-log-failure event=INVOCATION_START run_id=ecc14b5c436a8f96
+queue-ops-log-failure event=CONFIG_INVALID run_id=ecc14b5c436a8f96
+queue-ops-log-failure event=INVOCATION_END run_id=ecc14b5c436a8f96
+queue-ops-log-failure event=INVOCATION_START run_id=4c400b60229cc5c6
+queue-ops-log-failure event=CONFIG_INVALID run_id=4c400b60229cc5c6
+queue-ops-log-failure event=INVOCATION_END run_id=4c400b60229cc5c6
+queue-ops-log-failure event=INVOCATION_START run_id=ff3c73edf8cd5c5f
+queue-ops-log-failure event=CONFIG_INVALID run_id=ff3c73edf8cd5c5f
+queue-ops-log-failure event=INVOCATION_END run_id=ff3c73edf8cd5c5f
+queue-ops-log-failure event=INVOCATION_START run_id=244b4ebcc7eb81b6
+queue-ops-log-failure event=CONFIG_INVALID run_id=244b4ebcc7eb81b6
+queue-ops-log-failure event=INVOCATION_END run_id=244b4ebcc7eb81b6
+queue-ops-log-failure event=INVOCATION_START run_id=6af9be0b5b7563c2
+queue-ops-log-failure event=CONFIG_INVALID run_id=6af9be0b5b7563c2
+queue-ops-log-failure event=INVOCATION_END run_id=6af9be0b5b7563c2
+queue-ops-log-failure event=INVOCATION_START run_id=4dcaf0f12453d852
+queue-ops-log-failure event=CONFIG_INVALID run_id=4dcaf0f12453d852
+queue-ops-log-failure event=INVOCATION_END run_id=4dcaf0f12453d852
+queue-ops-log-failure event=INVOCATION_START run_id=38a7ce57b4e6c921
+queue-ops-log-failure event=CONFIG_INVALID run_id=38a7ce57b4e6c921
+queue-ops-log-failure event=INVOCATION_END run_id=38a7ce57b4e6c921
+queue-ops-log-failure event=INVOCATION_START run_id=ab3c427e0fb55594
+queue-ops-log-failure event=CONFIG_INVALID run_id=ab3c427e0fb55594
+queue-ops-log-failure event=INVOCATION_END run_id=ab3c427e0fb55594
+queue-ops-log-failure event=INVOCATION_START run_id=dc59f5f755e783ee
+queue-ops-log-failure event=CONFIG_INVALID run_id=dc59f5f755e783ee
+queue-ops-log-failure event=INVOCATION_END run_id=dc59f5f755e783ee
+queue-ops-log-failure event=INVOCATION_START run_id=f02124a756051c04
+queue-ops-log-failure event=CONFIG_INVALID run_id=f02124a756051c04
+queue-ops-log-failure event=INVOCATION_END run_id=f02124a756051c04
+queue-ops-log-failure event=INVOCATION_START run_id=e204e4cb4659fe44
+queue-ops-log-failure event=CONFIG_INVALID run_id=e204e4cb4659fe44
+queue-ops-log-failure event=INVOCATION_END run_id=e204e4cb4659fe44
+queue-ops-log-failure event=INVOCATION_START run_id=06c4e3462a97206b
+queue-ops-log-failure event=CONFIG_INVALID run_id=06c4e3462a97206b
+queue-ops-log-failure event=INVOCATION_END run_id=06c4e3462a97206b
+queue-ops-log-failure event=INVOCATION_START run_id=4db1a66d730a9e78
+queue-ops-log-failure event=LOCK_ACQUIRED run_id=4db1a66d730a9e78
+queue-ops-log-failure event=WORKER_START run_id=4db1a66d730a9e78
+queue-ops-log-failure event=JOB_PROCESSED run_id=4db1a66d730a9e78
+queue-ops-log-failure event=WORKER_END run_id=4db1a66d730a9e78
+queue-ops-log-failure event=INVOCATION_END run_id=4db1a66d730a9e78
+queue-ops-log-failure event=INVOCATION_START run_id=2d75259a157c7a9f
+queue-ops-log-failure event=CONFIG_INVALID run_id=2d75259a157c7a9f
+queue-ops-log-failure event=INVOCATION_END run_id=2d75259a157c7a9f
+queue-ops-log-failure event=INVOCATION_START run_id=ff7ea3b6d8ae8ef8
+queue-ops-log-failure event=CONFIG_INVALID run_id=ff7ea3b6d8ae8ef8
+queue-ops-log-failure event=INVOCATION_END run_id=ff7ea3b6d8ae8ef8
+queue-ops-log-failure event=INVOCATION_START run_id=fedc61e650d8f887
+queue-ops-log-failure event=CONFIG_INVALID run_id=fedc61e650d8f887
+queue-ops-log-failure event=INVOCATION_END run_id=fedc61e650d8f887
+queue-ops-log-failure event=INVOCATION_START run_id=f5b2cebeb8593ac6
+queue-ops-log-failure event=CONFIG_INVALID run_id=f5b2cebeb8593ac6
+queue-ops-log-failure event=INVOCATION_END run_id=f5b2cebeb8593ac6
+queue-ops-log-failure event=INVOCATION_START run_id=c0b3800798820c54
+queue-ops-log-failure event=CONFIG_INVALID run_id=c0b3800798820c54
+queue-ops-log-failure event=INVOCATION_END run_id=c0b3800798820c54
+queue-ops-log-failure event=INVOCATION_START run_id=d5ffb9a2b083ff4b
+queue-ops-log-failure event=CONFIG_INVALID run_id=d5ffb9a2b083ff4b
+queue-ops-log-failure event=INVOCATION_END run_id=d5ffb9a2b083ff4b
+
+   WARN  Tests\Feature\QueueWorkerCommandTest
+  ✓ jobs run inside the holder process while the lock is held                                                    1.11s  
+  ✓ every event of one invocation shares one run id and runs are distinct                                        2.13s  
+  ✓ a busy lock skips without entering the worker                                                                0.08s  
+  ✓ the pause gate is read only after the lock is acquired                                                       0.09s  
+  ✓ a paused queue skips under the lock and releases it                                                          0.09s  
+  ✓ maintenance mode skips under the lock                                                                        0.10s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock path missing"               0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock path empty"                 0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock path relative"              0.09s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock path with relative segment… 0.08s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock directory missing"          0.08s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock path inside the applicatio… 0.09s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock path outside the ops root"  0.08s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "pause path missing"              0.09s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "pause path equals lock path"     0.07s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "log path missing"                0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "log file name with glob charact… 0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "ops root missing"                0.07s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "ops root relative"               0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "ops root does not exist"         0.07s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "ops root inside the application… 0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "public roots missing"            0.07s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "public roots blank list"         0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "public root relative"            0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "ops root inside a public root"   0.04s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "ops root containing a public ro… 0.07s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock in the log directory"       0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "lock named as the daily log of…  0.08s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "pause named as an old rotated l… 0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "cron output in the control dire… 0.08s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "cron output named as a daily lo… 0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "cron output equals the log"      0.09s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "max time missing"                0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "timeout not an integer"          0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "sleep zero"                      0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "memory negative"                 0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "budget missing"                  0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "timeout not below retry after"   0.06s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "max time + timeout above budget… 0.08s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "retry after invalid"             0.08s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "max time overflowing digits"     0.05s  
+  ✓ invalid configuration fails closed before any lock or worker with data set "sleep above the representable b… 0.07s  
+  ✓ an unknown context is invalid configuration                                                                  0.04s  
+  ✓ a directory at the lock path is invalid configuration                                                        0.07s  
+  ✓ a lock that cannot be opened fails closed with 74                                                            0.05s  
+  ✓ a real worker memory stop propagates status 12                                                               1.07s  
+  ✓ a worker error status propagates verbatim                                                                    0.06s  
+  ✓ an exception escaping queue work is a failure and the lock is released                                       0.07s  
+  ✓ the lock is held while the worker frame runs                                                                 0.05s  
+  ✓ queue work receives the structural options without force or tries                                            0.08s  
+  ✓ the timeout must stay below the current retry after                                                          0.07s  
+  ✓ a timeout stop event is logged as worker killed before anything else                                         0.05s  
+  ✓ operational logs never contain secrets tokens or addresses                                                   1.34s  
+  ✓ a logging failure never blocks the worker or the exclusion                                                   1.11s  
+  ✓ ops log falls back to one secret free line when it cannot write                                              0.03s  
+  ✓ daily files keep fourteen days and are named by utc date                                                     0.08s  
+  ✓ listeners are registered once per application                                                                2.15s  
+  ✓ b1 absence is only established from a listable directory                                                     0.07s  
+  ✓ b1 an indeterminate pause state never enters the worker                                                      0.10s  
+  - b1 a real permission failure on the pause directory fails closed → POSIX directory permissions: covered on…  0.06s  
+  ✓ b2 operational paths in a public root outside the application are rejected without any write                 0.07s  
+  ✓ b2 a public root named through an alias is resolved and rejected                                             0.31s  
+  ✓ b3 daily rotation and retention never touch the lock or the pause flag                                       0.09s  
+  ✓ b3 a lock named like a daily log is rejected before any log write                                            0.06s  
+  ✓ ops log drops fields outside its whitelist                                                                   0.06s  
+  ✓ a custom job display name is never logged                                                                    1.11s  
+  ✓ a pause flag content that is not a timestamp is never echoed                                                 0.07s  
+  ✓ invocation start carries the validated lock path                                                             1.07s  
+
+   PASS  Tests\Feature\QueueWorkerProcessIntegrationTest
+  ✓ a lock held by another php process makes the worker skip                                                     4.41s  
+
+   PASS  Tests\Feature\RegistrationMailQueueTest
+  ✓ registered has exactly one listener the queue listener and not the native one                                0.06s  
+  ✓ registration queues exactly one job and sends nothing during the request                                     0.08s  
+  ✓ registration queues through the bus once                                                                     0.07s  
+  ✓ the registration http contract is unchanged                                                                  0.07s  
+  ✓ the registration request never touches smtp                                                                  0.09s  
+  ✓ the job goes to the database queue even when the default is sync                                             0.06s  
+  ✓ the real worker sends exactly one verification email                                                         0.06s  
+  ✓ one registration never produces a second initial email                                                       0.06s  
+  ✓ the link sent by the worker keeps the verification url semantics                                             0.11s  
+  ✓ the queued payload carries only the user id                                                                  0.08s  
+  ✓ the signed link is generated by the worker mail rendering not by the request                                 0.15s  
+  ✓ a user verified before the worker runs receives nothing                                                      0.10s  
+  ✓ a user deleted before the worker runs receives nothing                                                       0.08s  
+  ✓ a queue insert failure keeps the account and the success contract without fallback                           0.28s  
+  ✓ the reused job keeps its queue and retry policy                                                              0.06s  
+  ✓ an smtp failure in the worker releases the job for retry                                                     1.13s  
+
+   PASS  Tests\Feature\RequestForgeryCompatibilityTest
+  ✓ sanctum uses the laravel 13 moneva request forgery middleware                                                0.03s  
+  ✓ moneva middleware extends prevent request forgery and old class is gone                                      0.02s  
+  ✓ no path is exempt from request forgery protection                                                            0.02s  
+  ✓ the unmodified middleware is bypassed under unit tests                                                       0.02s  
+  ✓ stateful api writes require the csrf token                                                                   0.02s  
+  ✓ web writes without token are rejected                                                                        0.02s  
+  ✓ laravel 13 origin verification and token path are active for web routes                                      0.02s  
+
+   PASS  Tests\Feature\SanctumBearerCompatibilityTest
+  ✓ protected endpoints refuse unauthenticated requests                                                          0.06s  
+  ✓ register keeps its current contract                                                                          0.05s  
+  ✓ a personal access token still authenticates protected routes                                                 0.09s  
+  ✓ authenticated pdf export still returns a pdf                                                                 0.22s  
+  ✓ logout revokes the current token and it cannot be reused                                                     0.09s  
+  ✓ login no longer issues tokens to non browser clients                                                         0.06s  
+  ✓ sanctum 4 csrf middleware configuration protects the api                                                     0.04s  
+
+   PASS  Tests\Feature\SecurityHeadersTest
+  ✓ json responses carry the security headers                                                                    0.07s  
+  ✓ pdf downloads carry the security headers                                                                     0.22s  
+  ✓ health endpoint carries the security headers                                                                 0.05s  
+  ✓ cors preflight and actual requests are unchanged                                                             0.07s  
+
+   PASS  Tests\Feature\SessionAuthenticationTest
+  ✓ csrf cookie bootstrap sets a readable xsrf cookie and an httponly session cookie                             0.05s  
+  ✓ production configuration can enforce secure cookies                                                          0.05s  
+  ✓ spa login regenerates the session and issues no personal access token                                        0.08s  
+  ✓ spa login without or with a forged csrf token is rejected                                                    0.07s  
+  ✓ stateful api writes require the csrf token                                                                   0.09s  
+  ✓ user endpoint without a session is unauthorized                                                              0.04s  
+  ✓ logout invalidates the session and regenerates the csrf token                                                0.09s  
+  ✓ registration goes through csrf and does not log the user in                                                  0.07s  
+  ✓ session login keeps the dedicated rate limiter                                                               1.17s  
+  ✓ inactivity expiry closes the browser session                                                                 0.14s  
+  ✓ cors grants credentials only to the trusted spa origin                                                       0.04s  
+  ✓ logout still closes the session when the generic api limiter is exhausted                                    0.61s  
+  ✓ logout keeps auth and csrf and only drops the generic limiter                                                0.08s  
+  ✓ bearer clients outside the browser flow keep working without csrf                                            0.06s  
+
+  Tests:    2 warnings, 2 skipped, 382 passed (2787 assertions)
+  Duration: 77.48s
+

@@ -117,6 +117,8 @@ function initBe06Schema(): void {
         // BE-03 : schéma client statut/version requis par la barrière fail-closed.
         '2026_11_22_000001_add_administrative_status_to_users.php', '2026_11_22_000002_create_admin_audit_events_table.php',
         '2026_11_22_000003_create_notification_outbox_table.php',
+        // BE-04 : triggers append-only (SQLite : RAISE(ABORT)).
+        '2026_11_23_000001_protect_admin_audit_events.php',
     ];
     foreach ($list as $f) (require $root.'/database/migrations/'.$f)->up();
 }

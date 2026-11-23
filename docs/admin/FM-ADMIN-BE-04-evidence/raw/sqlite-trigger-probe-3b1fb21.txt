@@ -1,0 +1,4 @@
+insert ok
+refused: UPDATE -> SQLSTATE[23000]: Integrity constraint violation: 19 admin_audit_events is append-only
+refused: DELETE -> SQLSTATE[23000]: Integrity constraint violation: 19 admin_audit_events is append-only
+rows: 1
