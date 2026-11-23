@@ -1,0 +1,32 @@
+BE-04 — résumé des exécutions (extraits bruts, non retouchés)
+SHA exécuté : 3b1fb211c632354c144ec5981d9c39845beb2a4a
+Environnement : MySQL 8.4.3 local isolé (port dédié, datadir jetable) ; SQLite jetable ; données fictives
+
+PHPUnit MySQL 8.4.3 : Tests:    2 warnings, 2 skipped, 382 passed (2785 assertions)
+Banc BE-03/BE-04 MySQL 8.4.3 : 178/178 checks passed
+
+Non-régression (SQLite, copies isolées, vendor physique par copie) :
+##### base 6b02e4d own-autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes
+BE-06 TOTAL 81 FAILED 0
+sqlite triggers in BE-06 db:
+##### new 3b1fb21 own-autoload=1
+BE-01 TOTAL 241 FAIL 0 REQUESTS 55
+BE-01 TOTAL 240 FAIL 0 REQUESTS 55
+BE-02 run.php uncached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes
+BE-02 run.php cached: PASS=74 FAIL=1 FAIL only auth endpoints no business routes
+BE-06 TOTAL 81 FAILED 0
+sqlite triggers in BE-06 db: admin_audit_events_no_update,admin_audit_events_no_delete
+
+Sonde triggers SQLite (base jetable d'un banc) :
+insert ok
+refused: UPDATE -> SQLSTATE[23000]: Integrity constraint violation: 19 admin_audit_events is append-only
+refused: DELETE -> SQLSTATE[23000]: Integrity constraint violation: 19 admin_audit_events is append-only
+rows: 1
+
+MariaDB 10.11 (Docker) : NON EXÉCUTÉ — Docker Desktop ne démarre pas :
+  backend : starting services: initializing Ingest server: listening on unix://…/Docker/run/sailor-ingest.sock: rename … sailor-ingest.sock.stale: Le système ne peut pas accéder au fichier.
+PostgreSQL : NON EXÉCUTÉ (aucune instance autorisée).
