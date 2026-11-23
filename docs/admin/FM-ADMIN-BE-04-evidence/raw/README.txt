@@ -11,7 +11,11 @@ Transformations appliquées, et uniquement celles-ci :
   par <TEMP>/ : 2 lignes dans chaque journal PHPUnit, dans des noms de tests du
   verrou de worker ;
 - fins de ligne CRLF converties en LF, séquences de couleur ANSI retirées.
-Aucune ligne de résultat n'a été modifiée, ajoutée ni retirée.
+- (A-21, OpenCode REVIEW-02) chemin absolu du worktree remplacé par <REPO>/ dans la
+  dernière ligne des 4 journaux du banc (chemin du fichier de preuve JSON) ;
+  noms de fichiers de preuve, SHA et compteurs inchangés.
+Aucune ligne n'a été ajoutée ni retirée, et aucun résultat ni compteur n'a été
+modifié : seuls les chemins mentionnés ci-dessus ont été réécrits.
 
 Fichier                                            SHA exécuté  Moteur            Contenu
 phpunit-mysql84-3b1fb21.txt                        3b1fb21      MySQL 8.4.3       sortie complète de `php artisan test`

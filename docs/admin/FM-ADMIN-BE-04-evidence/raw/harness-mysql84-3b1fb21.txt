@@ -178,4 +178,4 @@ PASS BE-04 A12 UPDATE refused again after replay
 PASS BE-04 A12 finances unchanged by the BE-04 rollback/replay
 PASS BE-04 A13 limit observed: TRUNCATE bypasses row triggers (privileges required)
 
-178/178 checks passed — evidence: C:\PROJETS\GestionDepense\gestionnaire-backend-fm-admin-be-04/storage/app/admin-be03/runtime/evidence-8.4.3-20261122T235206-1d726e.json
+178/178 checks passed — evidence: <REPO>/storage/app/admin-be03/runtime/evidence-8.4.3-20261122T235206-1d726e.json
